@@ -139,10 +139,10 @@ if [ $FORCE -ne 1 ]; then
 fi
 
 set +e
-echo "Pulling premd latest image (${VERSION}) from ghcr.io."
-PREM_DAEMON_IMAGE=ghcr.io/premai-io/premd:${VERSION}
-echo "Pulling premd latest image (${VERSION}) from ghcr.io."
-PREM_APP_IMAGE=ghcr.io/premai-io/prem-app:${VERSION}
+echo "Pulling premd latest image (${DAEMON_VERSION}) from ghcr.io."
+PREM_DAEMON_IMAGE=ghcr.io/premai-io/premd:${DAEMON_VERSION}
+echo "Pulling premd latest image (${APP_VERSION}) from ghcr.io."
+PREM_APP_IMAGE=ghcr.io/premai-io/prem-app:${APP_VERSION}
 
 
 
