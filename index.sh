@@ -4,6 +4,9 @@
 
 set -eou pipefail
 
+PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/main/manifests.json
+SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
+
 SCRIPT_VERSION="v0.0.1"
 
 USER=premai-io
@@ -13,6 +16,7 @@ ARCH=$(uname -m)
 WHO=$(whoami)
 DEBUG=0
 FORCE=0
+NO_TRACK=0
 
 DOCKER_MAJOR=20
 DOCKER_MINOR=10
@@ -22,6 +26,10 @@ PREM_APP_ID=$(cat /proc/sys/kernel/random/uuid)
 PREM_AUTO_UPDATE=false
 
 PREM_CONF_FOUND=$(find ~ -path '*/prem/.env')
+
+if [ $NO_TRACK -eq 1 ]; then
+    SENTRY_DSN=''
+fi
 
 if [ -n "$PREM_CONF_FOUND" ]; then
     eval "$(grep ^PREM_APP_ID= $PREM_CONF_FOUND)"
@@ -36,9 +44,7 @@ restartDocker() {
     sudo systemctl restart docker
 }
 saveConfiguration() {
-    echo "PREM_APP_VERSION=${APP_VERSION:-latest}
-PREM_DAEMON_VERSION=${DAEMON_VERSION:-latest}
-PREM_APP_ID=$PREM_APP_ID
+    echo "PREM_APP_ID=$PREM_APP_ID
 PREM_HOSTED_ON=docker
 PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
@@ -92,25 +98,37 @@ if [ $DOCKER_VERSION_OK == 'nok' ]; then
 fi
 
 
-# Downloading docker compose cli plugin from CoolLabs CDN
-if [ ! -x ~/.docker/cli-plugins/docker-compose ]; then
-    echo "Installing Docker Compose CLI plugin."
-    if [ ! -d ~/.docker/cli-plugins/ ]; then
-        sudo mkdir -p ~/.docker/cli-plugins/
+# Function to compare version numbers
+function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
+
+# Check Docker Compose standalone CLI version
+CURRENT_VERSION=$(docker-compose -v 2>/dev/null | awk '{print $3}' | sed 's/,//')
+
+if [ -n "$CURRENT_VERSION" ]; then
+    if version_gt 1.18.0 $CURRENT_VERSION; then
+        echo "Current Docker Compose version is lower than 1.18.0, upgrading..."
+        sudo rm $(which docker-compose)
+    else
+        echo "Docker Compose is up to date."
     fi
-    if [ ARCH == 'arm64' ]; then
-        sudo curl --silent -SL https://cdn.coollabs.io/bin/linux/arm64/docker-compose-linux-2.6.1 -o ~/.docker/cli-plugins/docker-compose
-        sudo chmod +x ~/.docker/cli-plugins/docker-compose
-    fi
-    if [ ARCH == 'aarch64' ]; then
-        sudo curl --silent -SL https://cdn.coollabs.io/bin/linux/aarch64/docker-compose-linux-2.6.1 -o ~/.docker/cli-plugins/docker-compose
-        sudo chmod +x ~/.docker/cli-plugins/docker-compose
-    fi
-    if [ ARCH == 'amd64' ]; then
-        sudo curl --silent -SL https://cdn.coollabs.io/bin/linux/amd64/docker-compose-linux-2.6.1 -o ~/.docker/cli-plugins/docker-compose
-        sudo chmod +x ~/.docker/cli-plugins/docker-compose
-    fi
+else
+    echo "Installing Docker Compose."
 fi
+
+ARCH=$(uname -m)
+
+if [ "$ARCH" == 'arm64' ]; then
+    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-arm64" -o /usr/local/bin/docker-compose
+fi
+if [ "$ARCH" == 'aarch64' ]; then
+    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-arm64" -o /usr/local/bin/docker-compose
+fi
+if [ "$ARCH" == 'x86_64' ]; then
+    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+fi
+
+sudo chmod +x /usr/local/bin/docker-compose
+
 if [ $FORCE -eq 1 ]; then
     echo 'Updating Prem configuration.'
     saveConfiguration
@@ -142,6 +160,8 @@ set -e
 
 echo "🏁 Starting Prem..."
 
+export SENTRY_DSN=${SENTRY_DSN}
+export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 # Check if nvidia-smi is available
 if command -v nvidia-smi > /dev/null 2>&1; then
     echo "nvidia-smi is available. Running docker-compose.gpu.yml"
