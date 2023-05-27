@@ -3,14 +3,13 @@
 [ ! -n "$BASH_VERSION" ] && echo "You can only run this script with bash, not sh / dash." && exit 1
 
 set -eou pipefail
-APP_VERSION="latest"
-DAEMON_VERSION="latest"
+
 SCRIPT_VERSION="v0.0.1"
+
 ## To use later for auto update
-#USER=premai-io
-#REPO=prem-box
-#API_URL="https://api.github.com/repos/$USER/$REPO/releases/latest" 
-#DAEMON_VERSION=$(curl $API_URL | jq -r ".tag_name")
+USER=premai-io
+REPO=prem-box
+
 ARCH=$(uname -m)
 WHO=$(whoami)
 DEBUG=0
@@ -44,7 +43,7 @@ PREM_APP_ID=$PREM_APP_ID
 PREM_HOSTED_ON=docker
 PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
-  curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/$PREM_DAEMON_VERSION/docker-compose.yml -o ~/prem/docker-compose.yml
+  curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/docker-compose.yml -o ~/prem/docker-compose.yml
 }
 
 # Making base directory for prem
@@ -138,17 +137,19 @@ if [ $FORCE -ne 1 ]; then
     echo "👷‍♂️ Installing Prem"
 fi
 
-set +e
-echo "Pulling premd latest image (${DAEMON_VERSION}) from ghcr.io."
-PREM_DAEMON_IMAGE=ghcr.io/premai-io/premd:${DAEMON_VERSION}
-echo "Pulling premd latest image (${APP_VERSION}) from ghcr.io."
-PREM_APP_IMAGE=ghcr.io/premai-io/prem-app:${APP_VERSION}
-
-
 
 set -e
 
 echo "🏁 Starting Prem..."
-cd ~/prem && docker compose up -d --force-recreate >/dev/null
+
+# Check if nvidia-smi is available
+if command -v nvidia-smi > /dev/null 2>&1; then
+    echo "nvidia-smi is available. Running docker-compose.gpu.yml"
+    docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+else
+    echo "nvidia-smi is not available. Running docker-compose.yml"
+    docker-compose up -d
+fi
+
 echo -e "🎉 Congratulations! Your Prem instance is ready to use.\n"
-echo "Please visit http://$(curl -4s https://ifconfig.io):3000 to get started."
+echo "Please visit http://$(curl -4s https://ifconfig.io):8000/docs to get started."
