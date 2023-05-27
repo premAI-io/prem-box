@@ -6,7 +6,6 @@ set -eou pipefail
 
 SCRIPT_VERSION="v0.0.1"
 
-## To use later for auto update
 USER=premai-io
 REPO=prem-box
 
@@ -44,6 +43,7 @@ PREM_HOSTED_ON=docker
 PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
   curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/docker-compose.yml -o ~/prem/docker-compose.yml
+  curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
 }
 
 # Making base directory for prem
