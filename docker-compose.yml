@@ -3,7 +3,7 @@ version: "3.8"
 services:
   premd:
     container_name: premd
-    image: ghcr.io/premai-io/premd:latest
+    image: ghcr.io/premai-io/premd:v0.0.2@sha256:e18582bc15e357cd6e54bfd586f00d789734cc5916303ff90eea4eca12195d50
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
@@ -13,10 +13,16 @@ services:
       - SENTRY_DSN=${SENTRY_DSN}
 
   prem_app:
-    image: ghcr.io/premai-io/prem-app:latest
+    image: ghcr.io/premai-io/prem-app:v0.0.2@sha256:aabe8af4a7b9566fd359a6e5dac323117e69aa1e7edbe50b65fa82c9c4f20637
     ports:
       - 5173:5173
     environment:
       - VITE_ENABLE_STREAMING=0
       - VITE_DESTINATION=browser
       - VITE_IS_PACKAGED=true
+
+  caddy:
+    image: caddy:2.6.4-alpine@sha256:4dfec6c3b22c36b63ea4a3633c7cdbdaa9926d1324c27db2b0e2b70ef9cd105a
+    restart: on-failure
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
