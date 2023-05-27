@@ -15,7 +15,7 @@ services:
   prem_app:
     image: ghcr.io/premai-io/prem-app:v0.0.2@sha256:aabe8af4a7b9566fd359a6e5dac323117e69aa1e7edbe50b65fa82c9c4f20637
     ports:
-      - 5173:5173
+      - 1420:1420
     environment:
       - VITE_ENABLE_STREAMING=0
       - VITE_DESTINATION=browser
@@ -24,5 +24,7 @@ services:
   caddy:
     image: caddy:2.6.4-alpine@sha256:4dfec6c3b22c36b63ea4a3633c7cdbdaa9926d1324c27db2b0e2b70ef9cd105a
     restart: on-failure
+    ports:
+      - 8080:8080
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
