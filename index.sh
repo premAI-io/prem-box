@@ -50,12 +50,15 @@ restartDocker() {
     sudo systemctl restart docker
 }
 saveConfiguration() {
+    # write configuration to file
     echo "PREM_APP_ID=$PREM_APP_ID
 PREM_HOSTED_ON=docker
 PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
-  curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/docker-compose.yml -o ~/prem/docker-compose.yml
-  curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
+    # pull latest docker compose file from main branches
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/docker-compose.yml -o ~/prem/docker-compose.yml
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/Caddyfile -o ~/prem/Caddyfile
 }
 
 # Making base directory for prem
