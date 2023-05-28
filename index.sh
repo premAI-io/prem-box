@@ -181,4 +181,4 @@ else
 fi
 
 echo -e "🎉 Congratulations! Your Prem instance is ready to use.\n"
-echo "Please visit http://$(curl -4s https://ifconfig.io):8000/docs to get started."
+echo "Please visit http://$(curl -4s https://ifconfig.io):8080 to get started."
