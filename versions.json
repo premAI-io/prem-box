@@ -1,0 +1,10 @@
+{
+  "prem" : {
+    "app": {
+      "version": "v0.0.3"
+    },
+    "daemon": {
+      "version": "v0.0.4"
+    }
+  }
+}
