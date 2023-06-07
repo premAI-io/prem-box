@@ -59,8 +59,25 @@ PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/docker-compose.yml -o ~/prem/docker-compose.yml
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/Caddyfile -o ~/prem/Caddyfile
-}
 
+    # Request user to input FQDN
+    echo "Please enter your Fully Qualified Domain Name (FQDN)."
+    echo "Please make sure that you have pointed the DNS record A to your FQDN."
+
+    read -p "Enter FQDN: " fqdn
+
+    # Parse JSON file and get the list of ids
+    ids=("vicuna-7b-q4" "gpt4all-lora-q4" "dolly-v2-12")
+
+    # Loop over each id and append to Caddyfile
+    for id in $ids
+    do
+        echo "
+        $id.$fqdn {
+        reverse_proxy $id:8000
+        }" >> Caddyfile
+    done
+}
 # Making base directory for prem
 if [ ! -d ~/prem ]; then
     mkdir ~/prem
