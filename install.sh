@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-curl -i -X POST https://analytics.prem.ninja/api/event \
-  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 OPR/71.0.3770.284' \
-  -H 'X-Forwarded-For: 127.0.0.1' \
-  -H 'Content-Type: application/json' \
-  --data '{"name":"linux_install","url":"https://prem.ninja","domain":"prem.ninja"}'
-
 [ ! -n "$BASH_VERSION" ] && echo "You can only run this script with bash, not sh / dash." && exit 1
 
 set -eou pipefail
@@ -56,28 +50,32 @@ PREM_HOSTED_ON=docker
 PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
     # pull latest docker compose file from main branches
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/docker-compose.yml -o ~/prem/docker-compose.yml
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/blob/main/Caddyfile -o ~/prem/Caddyfile
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.yml -o ~/prem/docker-compose.yml
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
+    #curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/Caddyfile -o ~/prem/Caddyfile
 
-    # Request user to input FQDN
-    echo "Please enter your Fully Qualified Domain Name (FQDN)."
-    echo "Please make sure that you have pointed the DNS record A to your FQDN."
 
-    read -p "Enter FQDN: " fqdn
+    # Write initial config to Caddyfile
+    echo "$fqdn {
+    handle_path /api/* {
+        reverse_proxy premd:8000
+    }
+    reverse_proxy prem_app:1420
+}" > ~/prem/Caddyfile
 
-    # Parse JSON file and get the list of ids
+    # the list of ids
     ids=("vicuna-7b-q4" "gpt4all-lora-q4" "dolly-v2-12")
 
     # Loop over each id and append to Caddyfile
     for id in $ids
     do
-        echo "
-        $id.$fqdn {
-        reverse_proxy $id:8000
-        }" >> Caddyfile
+        echo "$id.$fqdn {
+    reverse_proxy $id:8000
+}" | sed 's/^  //' >> ~/prem/Caddyfile
     done
+
 }
+
 # Making base directory for prem
 if [ ! -d ~/prem ]; then
     mkdir ~/prem
@@ -85,6 +83,12 @@ fi
 
 echo -e "🤖 Welcome to Prem installer!"
 echo -e "This script will install all requirements to run Prem"
+
+# Request user to input FQDN
+echo "Please enter your Fully Qualified Domain Name (FQDN)."
+echo "Please make sure that you have pointed the DNS record A to your FQDN."
+
+read -p "Enter FQDN: " fqdn
 
 # Check docker version
 if [ ! -x "$(command -v docker)" ]; then
@@ -128,7 +132,11 @@ fi
 function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
 
 # Check Docker Compose standalone CLI version
-CURRENT_VERSION=$(docker-compose -v 2>/dev/null | awk '{print $3}' | sed 's/,//')
+echo "Check Docker Compose standalone CLI version"
+
+set +e  # disable exit on error
+CURRENT_VERSION=$(docker-compose -v 2>/dev/null | awk '{print $3}' | sed 's/,//' || echo "")
+set -e  # re-enable exit on error
 
 if [ -n "$CURRENT_VERSION" ]; then
     if version_gt 1.18.0 $CURRENT_VERSION; then
@@ -191,11 +199,17 @@ export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 # Check if nvidia-smi is available
 if command -v nvidia-smi > /dev/null 2>&1; then
     echo "nvidia-smi is available. Running docker-compose.gpu.yml"
-    docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+    docker-compose -f ~/prem/docker-compose.yml -f ~/prem/docker-compose.gpu.yml up -d
 else
     echo "nvidia-smi is not available. Running docker-compose.yml"
-    docker-compose up -d
+    docker-compose -f ~/prem/docker-compose.yml up -d
 fi
 
-echo -e "🎉 Congratulations! Your Prem instance is ready to use.\n"
+echo -e "🎉 Congratulations! Your Prem instance is ready to use"
 echo "Please visit http://$(curl -4s https://ifconfig.io):8080 to get started."
+
+curl --silent -X POST https://analytics.prem.ninja/api/event \
+    -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 OPR/71.0.3770.284' \
+    -H 'X-Forwarded-For: 127.0.0.1' \
+    -H 'Content-Type: application/json' \
+    --data '{"name":"linux_install","url":"https://prem.ninja","domain":"prem.ninja"}'
