@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash --init-file
 
 [ ! -n "$BASH_VERSION" ] && echo "You can only run this script with bash, not sh / dash." && exit 1
 
