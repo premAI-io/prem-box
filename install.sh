@@ -52,8 +52,6 @@ PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
     # pull latest docker compose file from main branches
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.yml -o ~/prem/docker-compose.yml
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
-    #curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/Caddyfile -o ~/prem/Caddyfile
-
 
     # Write initial config to Caddyfile
     echo "$fqdn {
@@ -190,10 +188,38 @@ if [ $FORCE -ne 1 ]; then
 fi
 
 
+# we need jq
+echo "⬇️ Pulling latest version..."
+
+sudo apt-get update
+sudo apt-get install -y jq
+
+versions_json=$(curl --silent https://raw.githubusercontent.com/premAI-io/prem-box/main/versions.json)
+
+# Extract the 'app' details
+app_version=$(echo "$versions_json" | jq -r '.prem.app.version')
+app_image=$(echo "$versions_json" | jq -r '.prem.app.image')
+app_digest=$(echo "$versions_json" | jq -r '.prem.app.digest')
+
+echo "App Version: $app_version"
+echo "App Image: $app_image"
+echo "App Digest: $app_digest"
+
+# Extract the 'daemon' details
+daemon_version=$(echo "$versions_json" | jq -r '.prem.daemon.version')
+daemon_image=$(echo "$versions_json" | jq -r '.prem.daemon.image')
+daemon_digest=$(echo "$versions_json" | jq -r '.prem.daemon.digest')
+
+echo "Daemon Version: $daemon_version"
+echo "Daemon Image: $daemon_image"
+echo "Daemon Digest: $daemon_digest"
+
 set -e
 
 echo "🏁 Starting Prem..."
 
+export PREM_APP_IMAGE=${app_image}:${app_version}@${app_digest}
+export PREM_DAEMON_IMAGE=${daemon_image}:${daemon_version}@${daemon_digest}
 export SENTRY_DSN=${SENTRY_DSN}
 export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 # Check if nvidia-smi is available
