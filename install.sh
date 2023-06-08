@@ -202,10 +202,10 @@ export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 # Check if nvidia-smi is available
 if command -v nvidia-smi > /dev/null 2>&1; then
     echo "nvidia-smi is available. Running docker-compose.gpu.yml"
-    docker-compose -f ~/prem/docker-compose.yml -f ~/prem/docker-compose.gpu.yml pull
+    docker-compose -f ~/prem/docker-compose.yml -f ~/prem/docker-compose.gpu.yml up -d
 else
     echo "nvidia-smi is not available. Running docker-compose.yml"
-    docker-compose -f ~/prem/docker-compose.yml pull
+    docker-compose -f ~/prem/docker-compose.yml up -d
 fi
 
 echo -e "🎉 Congratulations! Your Prem instance is ready to use"
