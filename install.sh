@@ -168,8 +168,8 @@ fi
 # we need jq
 echo "⬇️ Pulling latest version..."
 
-sudo apt-get update
-sudo apt-get install -y jq
+sudo apt -qq update
+sudo apt -qq install -y jq
 
 versions_json=$(curl --silent https://raw.githubusercontent.com/premAI-io/prem-box/main/versions.json)
 
