@@ -1,4 +1,4 @@
-#!/bin/bash --init-file
+#!/usr/bin/env bash
 
 [ ! -n "$BASH_VERSION" ] && echo "You can only run this script with bash, not sh / dash." && exit 1
 
@@ -52,26 +52,7 @@ PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
     # pull latest docker compose file from main branches
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.yml -o ~/prem/docker-compose.yml
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
-
-    # Write initial config to Caddyfile
-    echo "$fqdn {
-    handle_path /api/* {
-        reverse_proxy premd:8000
-    }
-    reverse_proxy prem_app:1420
-}" > ~/prem/Caddyfile
-
-    # the list of ids
-    ids=("vicuna-7b-q4" "gpt4all-lora-q4" "dolly-v2-12")
-
-    # Loop over each id and append to Caddyfile
-    for id in $ids
-    do
-        echo "$id.$fqdn {
-    reverse_proxy $id:8000
-}" | sed 's/^  //' >> ~/prem/Caddyfile
-    done
-
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/Caddyfile -o ~/prem/Caddyfile
 }
 
 # Making base directory for prem
@@ -79,14 +60,10 @@ if [ ! -d ~/prem ]; then
     mkdir ~/prem
 fi
 
+echo ""
 echo -e "🤖 Welcome to Prem installer!"
 echo -e "This script will install all requirements to run Prem"
-
-# Request user to input FQDN
-echo "Please enter your Fully Qualified Domain Name (FQDN)."
-echo "Please make sure that you have pointed the DNS record A to your FQDN."
-
-read -p "Enter FQDN: " fqdn
+echo ""
 
 # Check docker version
 if [ ! -x "$(command -v docker)" ]; then
@@ -225,10 +202,10 @@ export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 # Check if nvidia-smi is available
 if command -v nvidia-smi > /dev/null 2>&1; then
     echo "nvidia-smi is available. Running docker-compose.gpu.yml"
-    docker-compose -f ~/prem/docker-compose.yml -f ~/prem/docker-compose.gpu.yml up -d
+    docker-compose -f ~/prem/docker-compose.yml -f ~/prem/docker-compose.gpu.yml pull
 else
     echo "nvidia-smi is not available. Running docker-compose.yml"
-    docker-compose -f ~/prem/docker-compose.yml up -d
+    docker-compose -f ~/prem/docker-compose.yml pull
 fi
 
 echo -e "🎉 Congratulations! Your Prem instance is ready to use"
