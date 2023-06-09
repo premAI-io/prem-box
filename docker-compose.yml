@@ -24,6 +24,6 @@ services:
     image: caddy:2.6.4-alpine@sha256:4dfec6c3b22c36b63ea4a3633c7cdbdaa9926d1324c27db2b0e2b70ef9cd105a
     restart: on-failure
     ports:
-      - 8080:8080
+      - 8000:8000
     volumes:
       - $HOME/prem/Caddyfile:/etc/caddy/Caddyfile
