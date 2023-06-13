@@ -46,7 +46,7 @@ if [ -z "$(git diff -- $json_file)" ]; then
 fi
 ## Commit & Push to main
 git add $json_file
-git commit -S -m "Bump to latest release" 
+git commit -S -m "${latest_release}" 
 git push origin main
 
 
