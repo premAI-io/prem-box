@@ -36,8 +36,21 @@ bump_to_latest_tag() {
     '.prem[$rep].version = $ver | .prem[$rep].digest = $dig' $json_file > temp.json && mv temp.json $json_file
 }
 
-# Fetch info for repo
 bump_to_latest_tag $app_repo $app $app_image
-
-# Fetch info for repo2
 bump_to_latest_tag $daemon_repo $daemon $daemon_image
+
+# Check for changes in the repository
+if [ -z "$(git diff -- $json_file)" ]; then
+    echo "No changes detected."
+    exit 0
+fi
+## Commit & Push to main
+git add $json_file
+git commit -S -m "Bump to latest release" 
+git push origin main
+
+
+
+
+
+
