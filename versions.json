@@ -1,9 +1,9 @@
 {
   "prem": {
     "app": {
-      "version": "v0.0.12",
+      "version": "v0.0.16",
       "image": "ghcr.io/premai-io/prem-app",
-      "digest": "sha256:5aafd40db2ac578555663ef2447e8f9ee0fcfcd870b454d20d33a249eef4c26a"
+      "digest": "sha256:eccd3f72a4c31582500c8c13ae340807592b312ee3cacb58516d03e677528a9f"
     },
     "daemon": {
       "version": "v0.0.14",
