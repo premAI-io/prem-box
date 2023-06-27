@@ -126,15 +126,19 @@ fi
 
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
+# Get the latest version of Docker Compose
+DOCKER_COMPOSE_VERSION=$(curl --silent https://api.github.com/repos/docker/compose/releases/latest | jq .name -r)
+
+
 
 if [ "$ARCH" == 'arm64' ]; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/v1.29.2/docker-compose-${OS}-arm64" -o /usr/local/bin/docker-compose
+    sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-aarch64" -o /usr/local/bin/docker-compose
 fi
 if [ "$ARCH" == 'aarch64' ]; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/v1.29.2/docker-compose-${OS}-arm64" -o /usr/local/bin/docker-compose
+    sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
 fi
 if [ "$ARCH" == 'x86_64' ]; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/v1.29.2/docker-compose-${OS}-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
 fi
 
 sudo chmod +x /usr/local/bin/docker-compose
