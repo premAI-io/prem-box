@@ -124,16 +124,17 @@ else
     echo "Installing Docker Compose."
 fi
 
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
 
 if [ "$ARCH" == 'arm64' ]; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-arm64" -o /usr/local/bin/docker-compose
+    sudo curl -L "https://github.com/docker/compose/releases/download/v1.29.2/docker-compose-${OS}-arm64" -o /usr/local/bin/docker-compose
 fi
 if [ "$ARCH" == 'aarch64' ]; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-arm64" -o /usr/local/bin/docker-compose
+    sudo curl -L "https://github.com/docker/compose/releases/download/v1.29.2/docker-compose-${OS}-arm64" -o /usr/local/bin/docker-compose
 fi
 if [ "$ARCH" == 'x86_64' ]; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo curl -L "https://github.com/docker/compose/releases/download/v1.29.2/docker-compose-${OS}-$(uname -m)" -o /usr/local/bin/docker-compose
 fi
 
 sudo chmod +x /usr/local/bin/docker-compose
