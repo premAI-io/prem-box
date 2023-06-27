@@ -126,6 +126,9 @@ fi
 
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
+# we need jq
+DEBIAN_FRONTEND=noninteractive sudo apt -qq update -y 
+DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y  jq
 # Get the latest version of Docker Compose
 DOCKER_COMPOSE_VERSION=$(curl --silent https://api.github.com/repos/docker/compose/releases/latest | jq .name -r)
 
@@ -169,13 +172,7 @@ if [ $FORCE -ne 1 ]; then
     echo "👷‍♂️ Installing Prem"
 fi
 
-
-# we need jq
 echo "⬇️ Pulling latest version..."
-
-DEBIAN_FRONTEND=noninteractive sudo apt -qq update -y 
-DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y  jq
-
 versions_json=$(curl --silent https://raw.githubusercontent.com/premAI-io/prem-box/main/versions.json)
 
 # Extract the 'app' details
