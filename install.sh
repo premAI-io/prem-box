@@ -73,11 +73,12 @@ check_nvidia_driver() {
 
 # Function to install NVIDIA drivers
 install_nvidia_drivers() {
+    export DEBIAN_FRONTEND=noninteractive
     # Update package list
     sudo apt -qq update -y
 
     # Install necessary packages for the NVIDIA driver installation
-    sudo apt -qq install -y build-essential dkms
+    sudo apt -qq install -y build-essential dkms ubuntu-drivers-common
 
     # Install the recommended driver
     sudo ubuntu-drivers autoinstall
