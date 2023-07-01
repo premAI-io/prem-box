@@ -249,8 +249,13 @@ export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 # Check for GPU and install drivers if necessary
 if has_gpu; then
     if ! check_nvidia_driver; then
-        echo "NVIDIA GPU detected, but drivers not installed. Installing drivers..."
-        echo "This will reboot your system. Please run this script again after reboot."
+        ehco ""
+        echo "---------------------------"
+        echo "🚨 NVIDIA GPU detected, but drivers not installed."
+        echo "Installing drivers..."
+        echo "⚠️⚠️⚠️ This will reboot your system. Please run this script again after reboot."
+        echo "---------------------------"
+        echo ""
         install_nvidia_drivers
         exit 0
     fi
