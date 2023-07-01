@@ -54,6 +54,47 @@ PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/Caddyfile -o ~/prem/Caddyfile
 }
+# Function to check for NVIDIA GPU
+has_gpu() {
+    if lspci | grep -i 'NVIDIA' > /dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+# Function to check for NVIDIA drivers
+check_nvidia_driver() {
+    if command -v nvidia-smi > /dev/null 2>&1 && which nvidia-container-toolkit > /dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to install NVIDIA drivers
+install_nvidia_drivers() {
+    export DEBIAN_FRONTEND=noninteractive
+    # Update package list
+    sudo apt -qq update -y
+
+    # Install necessary packages for the NVIDIA driver installation
+    sudo apt -qq install -y build-essential dkms ubuntu-drivers-common
+
+    # Install the recommended driver
+    sudo ubuntu-drivers autoinstall
+
+    # variable and install function for Nvidia-Container Toolkit
+    distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+    echo $distribution
+    curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add -
+    curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    sudo apt -qq update -y
+    sudo apt install -qq -y nvidia-docker2
+    sudo systemctl restart docker
+
+    # Reboot system to take effect
+    sudo reboot
+}
 
 # Making base directory for prem
 if [ ! -d ~/prem ]; then
@@ -64,6 +105,11 @@ echo ""
 echo -e "🤖 Welcome to Prem installer!"
 echo -e "This script will install all requirements to run Prem"
 echo ""
+
+# install curl, jq 
+DEBIAN_FRONTEND=noninteractive sudo apt -qq update -y 
+DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y  curl jq
+
 
 # Check docker version
 if [ ! -x "$(command -v docker)" ]; then
@@ -126,22 +172,19 @@ fi
 
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
-# we need jq
-DEBIAN_FRONTEND=noninteractive sudo apt -qq update -y 
-DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y  jq
 # Get the latest version of Docker Compose
 DOCKER_COMPOSE_VERSION=$(curl --silent https://api.github.com/repos/docker/compose/releases/latest | jq .name -r)
 
 
 
 if [ "$ARCH" == 'arm64' ]; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-aarch64" -o /usr/local/bin/docker-compose
+    sudo curl --silent -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-aarch64" -o /usr/local/bin/docker-compose
 fi
 if [ "$ARCH" == 'aarch64' ]; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
+    sudo curl --silent -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
 fi
 if [ "$ARCH" == 'x86_64' ]; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
+    sudo curl --silent -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
 fi
 
 sudo chmod +x /usr/local/bin/docker-compose
@@ -201,8 +244,17 @@ export PREM_APP_IMAGE=${app_image}:${app_version}@${app_digest}
 export PREM_DAEMON_IMAGE=${daemon_image}:${daemon_version}@${daemon_digest}
 export SENTRY_DSN=${SENTRY_DSN}
 export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
-# Check if nvidia-smi is available
-if command -v nvidia-smi > /dev/null 2>&1; then
+
+
+# Check for GPU and install drivers if necessary
+if has_gpu; then
+    if ! check_nvidia_driver; then
+        echo "NVIDIA GPU detected, but drivers not installed. Installing drivers..."
+        echo "This will reboot your system. Please run this script again after reboot."
+        install_nvidia_drivers
+        exit 0
+    fi
+
     echo "nvidia-smi is available. Running docker-compose.gpu.yml"
     docker-compose -f ~/prem/docker-compose.yml -f ~/prem/docker-compose.gpu.yml up -d
 else
