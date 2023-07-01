@@ -83,6 +83,15 @@ install_nvidia_drivers() {
     # Install the recommended driver
     sudo ubuntu-drivers autoinstall
 
+    # Add the package repositories
+    distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+    curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+    curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list > /dev/null 2>&1
+
+    # Install nvidia-docker2 and reload the Docker daemon configuration
+    sudo apt -qq install -y nvidia-docker2
+    sudo systemctl restart docker
+
     # Reboot system to take effect
     sudo reboot
 }
@@ -169,13 +178,13 @@ DOCKER_COMPOSE_VERSION=$(curl --silent https://api.github.com/repos/docker/compo
 
 
 if [ "$ARCH" == 'arm64' ]; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-aarch64" -o /usr/local/bin/docker-compose
+    sudo curl --silent -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-aarch64" -o /usr/local/bin/docker-compose
 fi
 if [ "$ARCH" == 'aarch64' ]; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
+    sudo curl --silent -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
 fi
 if [ "$ARCH" == 'x86_64' ]; then
-    sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
+    sudo curl --silent -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
 fi
 
 sudo chmod +x /usr/local/bin/docker-compose
