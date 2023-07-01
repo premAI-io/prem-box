@@ -54,6 +54,16 @@ PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/Caddyfile -o ~/prem/Caddyfile
 }
+# variable and install function for Nvidia-Container Toolkit
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+echo $distribution
+installNvidiaContainerToolkit(){
+    curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add -
+    curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    DEBIAN_FRONTEND=noninteractive sudo apt-get -qq update -y
+    DEBIAN_FRONTEND=noninteractive sudo apt-get install -qq -y nvidia-docker2
+    sudo systemctl restart docker
+}
 
 # Making base directory for prem
 if [ ! -d ~/prem ]; then
@@ -203,6 +213,13 @@ export SENTRY_DSN=${SENTRY_DSN}
 export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 # Check if nvidia-smi is available
 if command -v nvidia-smi > /dev/null 2>&1; then
+    if [ $(which nvidia-container-toolkit) ]; then
+        echo "nvidia-container toolkit is available"
+    else
+        echo "nvidia-container toolkit is needed for GPU usage inside a container"
+        echo "Installing nvidia-container toolkit"
+        installNvidiaContainerToolkit
+    fi
     echo "nvidia-smi is available. Running docker-compose.gpu.yml"
     docker-compose -f ~/prem/docker-compose.yml -f ~/prem/docker-compose.gpu.yml up -d
 else
