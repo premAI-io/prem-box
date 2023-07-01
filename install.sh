@@ -64,7 +64,7 @@ has_gpu() {
 }
 # Function to check for NVIDIA drivers
 check_nvidia_driver() {
-    if command -v nvidia-smi > /dev/null 2>&1; then
+    if command -v nvidia-smi > /dev/null 2>&1 && which nvidia-container-toolkit > /dev/null 2>&1; then
         return 0
     else
         return 1
@@ -83,13 +83,13 @@ install_nvidia_drivers() {
     # Install the recommended driver
     sudo ubuntu-drivers autoinstall
 
-    # Add the package repositories
+    # variable and install function for Nvidia-Container Toolkit
     distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-    curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-    curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list > /dev/null 2>&1
-
-    # Install nvidia-docker2 and reload the Docker daemon configuration
-    sudo apt -qq install -y nvidia-docker2
+    echo $distribution
+    curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add -
+    curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    sudo apt -qq update -y
+    sudo apt install -qq -y nvidia-docker2
     sudo systemctl restart docker
 
     # Reboot system to take effect
