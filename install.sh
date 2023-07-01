@@ -78,10 +78,10 @@ install_nvidia_drivers() {
     sudo apt -qq update -y
 
     # Install necessary packages for the NVIDIA driver installation
-    sudo apt -qq install -y build-essential dkms ubuntu-drivers-common
+    sudo apt install -qq -y build-essential dkms ubuntu-drivers-common
 
     # Install the recommended driver
-    sudo ubuntu-drivers autoinstall
+    sudo ubuntu-drivers autoinstall > /dev/null 2>&1
 
     # variable and install function for Nvidia-Container Toolkit
     distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
