@@ -249,7 +249,7 @@ export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 # Check for GPU and install drivers if necessary
 if has_gpu; then
     if ! check_nvidia_driver; then
-        ehco ""
+        echo ""
         echo "---------------------------"
         echo "🚨 NVIDIA GPU detected, but drivers not installed."
         echo "Installing drivers..."
