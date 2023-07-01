@@ -74,13 +74,13 @@ check_nvidia_driver() {
 # Function to install NVIDIA drivers
 install_nvidia_drivers() {
     # Update package list
-    sudo apt-get update -y > /dev/null 2>&1
+    sudo apt -qq update -y
 
     # Install necessary packages for the NVIDIA driver installation
-    sudo apt-get install -y build-essential dkms > /dev/null 2>&1
+    sudo apt -qq install -y build-essential dkms
 
     # Install the recommended driver
-    sudo ubuntu-drivers autoinstall > /dev/null 2>&1
+    sudo ubuntu-drivers autoinstall
 
     # Reboot system to take effect
     sudo reboot
