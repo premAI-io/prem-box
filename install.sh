@@ -7,7 +7,7 @@ set -eou pipefail
 PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/main/manifests.json
 SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
 
-SCRIPT_VERSION="v0.0.1"
+SCRIPT_VERSION="v0.0.2"
 
 USER=premai-io
 REPO=prem-box
