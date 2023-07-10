@@ -6,9 +6,9 @@
       "digest": "sha256:489431af78e48734ee74977eaad648affd8866e41b28ae0787d6f6cf8c0ce716"
     },
     "daemon": {
-      "version": "v0.0.17",
+      "version": "v0.0.18",
       "image": "ghcr.io/premai-io/premd",
-      "digest": "sha256:c770ae988dfa026a12984979a5b0a7706aa7f4782775999f398b4b600938774e"
+      "digest": "sha256:415610fb9ab836908adc4e7468f080a350decd3e2c2cc262126f2bbfe80e6cfd"
     }
   }
 }
