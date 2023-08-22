@@ -3,7 +3,7 @@
     "app": {
       "version": "v0.0.27",
       "image": "ghcr.io/premai-io/prem-app",
-      "digest": ""
+      "digest": "sha256:7774aa9d33e77fc95f154413f6d9beece05c1a75e8c7f89188b1ebe5fb43bf48"
     },
     "daemon": {
       "version": "v0.0.23",
