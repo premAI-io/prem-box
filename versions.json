@@ -8,7 +8,7 @@
     "daemon": {
       "version": "v0.0.23",
       "image": "ghcr.io/premai-io/premd",
-      "digest": ""
+      "digest": "sha256:2a741292028739e4f02ae933226e8ee48776f1bf894532c7bb2c65e528aedcc0"
     }
   }
 }
