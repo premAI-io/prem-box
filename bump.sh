@@ -10,6 +10,17 @@ daemon="daemon"
 daemon_repo="prem-daemon"
 daemon_image="premd"
 
+dnsd="dnsd"
+dnsd_repo="prem-gateway"
+dnsd_image="prem-gateway/dnsd"
+
+controllerd="controllerd"
+controllerd_repo="prem-gateway"
+controllerd_image="prem-gateway/controllerd"
+
+auth="authd"
+auth_repo="prem-gateway"
+auth_image="prem-gateway/authd"
 
 # JSON file
 json_file="versions.json"
@@ -38,6 +49,9 @@ bump_to_latest_tag() {
 
 bump_to_latest_tag $app_repo $app $app_image
 bump_to_latest_tag $daemon_repo $daemon $daemon_image
+bump_to_latest_tag $dnsd_repo $dnsd $dnsd_image
+bump_to_latest_tag $controllerd_repo $controllerd $controllerd_image
+bump_to_latest_tag $auth_repo $auth $auth_image
 
 # Check for changes in the repository
 if [ -z "$(git diff -- $json_file)" ]; then

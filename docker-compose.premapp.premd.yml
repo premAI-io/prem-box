@@ -1,0 +1,40 @@
+services:
+  premd:
+    container_name: premd
+    image: ${PREM_DAEMON_IMAGE}
+    restart: on-failure
+    networks:
+      - prem-gateway
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/main/manifests.json
+      - SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
+      - PROXY_ENABLED=True
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.premd.rule=HeadersRegexp(`X-Host-Override`,`premd`) && PathPrefix(`/`)"
+    ports:
+      - "8084:8000"
+
+  premapp:
+    container_name: premapp
+    image: ${PREM_APP_IMAGE}
+    restart: on-failure
+    networks:
+      - prem-gateway
+    environment:
+      - VITE_DESTINATION=browser
+      - VITE_IS_PACKAGED=true
+      - VITE_PROXY_ENABLED=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.premapp-http.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.premapp-http.entrypoints=web"
+      - "traefik.http.services.premapp.loadbalancer.server.port=8080"
+    ports:
+      - "8085:8080"
+
+networks:
+  prem-gateway:
+    external: true

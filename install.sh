@@ -51,6 +51,8 @@ PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
     # pull latest docker compose file from main branches
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.yml -o ~/prem/docker-compose.yml
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.premg.yml -o ~/prem/docker-compose.premg.yml
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.premapp.premd.yml -o ~/prem/docker-compose.premapp.premd.yml
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
     curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/Caddyfile -o ~/prem/Caddyfile
 }
@@ -236,12 +238,42 @@ echo "Daemon Version: $daemon_version"
 echo "Daemon Image: $daemon_image"
 echo "Daemon Digest: $daemon_digest"
 
+# Extract the 'dnsd' details
+dnsd_version=$(echo "$versions_json" | jq -r '.prem.dnsd.version')
+dnsd_image=$(echo "$versions_json" | jq -r '.prem.dnsd.image')
+dnsd_digest=$(echo "$versions_json" | jq -r '.prem.dnsd.digest')
+
+echo "Dnsd Version: $dnsd_version"
+echo "Dnsd Image: $dnsd_image"
+echo "Dnsd Digest: $dnsd_digest"
+
+# Extract the 'controllerd' details
+controllerd_version=$(echo "$versions_json" | jq -r '.prem.controllerd.version')
+controllerd_image=$(echo "$versions_json" | jq -r '.prem.controllerd.image')
+controllerd_digest=$(echo "$versions_json" | jq -r '.prem.controllerd.digest')
+
+echo "Controllerd Version: $controllerd_version"
+echo "Controllerd Image: $controllerd_image"
+echo "Controllerd Digest: $controllerd_digest"
+
+# Extract the 'authd' details
+authd_version=$(echo "$versions_json" | jq -r '.prem.authd.version')
+authd_image=$(echo "$versions_json" | jq -r '.prem.authd.image')
+authd_digest=$(echo "$versions_json" | jq -r '.prem.authd.digest')
+
+echo "Authd Version: $authd_version"
+echo "Authd Image: $authd_image"
+echo "Authd Digest: $authd_digest"
+
 set -e
 
 echo "🏁 Starting Prem..."
 
 export PREM_APP_IMAGE=${app_image}:${app_version}@${app_digest}
 export PREM_DAEMON_IMAGE=${daemon_image}:${daemon_version}@${daemon_digest}
+export PREMG_DNSD_IMAGE=${dnsd_image}:${dnsd_version}@${dnsd_digest}
+export PREMG_CONTROLLERD_IMAGE=${controllerd_image}:${controllerd_version}@${controllerd_digest}
+export PREMG_AUTHD_IMAGE=${authd_image}:${authd_version}@${authd_digest}
 export SENTRY_DSN=${SENTRY_DSN}
 export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 
@@ -258,9 +290,51 @@ if has_gpu; then
     echo "nvidia-smi is available. Running docker-compose.gpu.yml"
     docker-compose -f ~/prem/docker-compose.yml -f ~/prem/docker-compose.gpu.yml up -d
 else
-    echo "nvidia-smi is not available. Running docker-compose.yml"
-    docker-compose -f ~/prem/docker-compose.yml up -d
+    read -p "nvidia-smi is not available. Do you want to install prem-gateway with prem-app and prem-daemon? [y/N]: " choice
+    case "$choice" in
+        y|Y)
+            echo "Installing prem-gateway, prem-app, and prem-daemon..."
+
+            # Check for existing PostgreSQL password in environment variable
+            if [ -z "$POSTGRES_PASSWORD" ]; then
+                read -s -p "Enter your PostgreSQL password: " POSTGRES_PASSWORD
+                echo  # Adds a newline after password input
+            fi
+            export POSTGRES_PASSWORD
+
+            export LETSENCRYPT_PROD=true
+            export SERVICES=premd,premapp
+            export POSTGRES_USER=root
+            export POSTGRES_PASSWORD=secret
+            export POSTGRES_DB=dnsd-db
+
+            docker-compose -f ~/prem/docker-compose.premg.yml up -d --build || exit 1
+
+            # Loop to check for 'OK' from curl command with maximum 10 retries
+            retries=0
+            while [ $retries -lt 10 ]; do
+              response=$(curl -s --fail http://localhost:8080/ping)
+              if [ "$response" == "OK" ]; then
+                echo "Received OK. Proceeding to next step."
+                break
+              else
+                echo "Waiting for OK response..."
+                sleep 2
+                retries=$((retries + 1))
+              fi
+            done
+
+            [ "$response" == "OK" ] || { echo "Failed to receive OK response."; exit 1; }
+
+            docker-compose -f ~/prem/docker-compose.premapp.premd.yml up -d --build || exit 1
+            ;;
+        *)
+            echo "Skipping installation of prem-gateway. Running docker-compose.yml"
+            docker-compose -f ~/prem/docker-compose.yml up -d || exit 1
+            ;;
+    esac
 fi
+
 
 echo -e "🎉 Congratulations! Your Prem instance is ready to use"
 echo "Please visit http://$(curl -4s https://ifconfig.io):8000 to get started."
