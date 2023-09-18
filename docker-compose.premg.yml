@@ -17,7 +17,7 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./traefik/letsencrypt:/letsencrypt
+      - traefik-letsencrypt:/letsencrypt
     depends_on:
       - dnsd
     restart: always
@@ -51,7 +51,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - ./pg-data:/var/lib/postgresql/data
+      - dnsd-pg-data:/var/lib/postgresql/data
     restart: always
   authd:
     container_name: authd
@@ -79,3 +79,7 @@ services:
 networks:
   prem-gateway:
     external: true
+
+volumes:
+  dnsd-pg-data:
+  traefik-letsencrypt:
