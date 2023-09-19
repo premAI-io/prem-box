@@ -1,0 +1,29 @@
+{
+  "prem": {
+    "app": {
+      "version": "v0.0.29",
+      "image": "ghcr.io/premai-io/prem-app:v0.0.29",
+      "digest": "sha256:c8efa1da502ab365746596d07d23c16a276c9bf96c095d5c4151bbd58abf9ea4"
+    },
+    "daemon": {
+      "version": "v0.0.24",
+      "image": "ghcr.io/premai-io/premd:v0.0.24",
+      "digest": "sha256:ca9b546899eb9c53ee69551ac3a8a6ac363c6d7de5eda545df375a00df73a36c"
+    },
+    "dnsd": {
+      "version": "v.0.0.1",
+      "digest": "sha256:7bd337ef3dc2a73c2342481b1bca17ac9eb97cd9a5441476ea3cf0ca3cc27830",
+      "image": "ghcr.io/premai-io/prem-gateway/dnsd:v.0.0.1"
+    },
+    "controllerd": {
+      "version": "v.0.0.1",
+      "digest": "sha256:ae27a9d251b7584e49e259e87bc5669dacb143234924fc82b46f76e2880ad4b2",
+      "image": "ghcr.io/premai-io/prem-gateway/controllerd:v.0.0.1"
+    },
+    "authd": {
+      "version": "v.0.0.1",
+      "digest": "sha256:f2b1700bf13a648cb63ff63dd033dbbfe046063886b2ee1a1ac5c9def035baef",
+      "image": "ghcr.io/premai-io/prem-gateway/authd:v.0.0.1"
+    }
+  }
+}
