@@ -12,13 +12,13 @@
     },
     "dnsd": {
       "version": "v.0.0.1",
-      "digest": "sha256:7bd337ef3dc2a73c2342481b1bca17ac9eb97cd9a5441476ea3cf0ca3cc27830",
-      "image": "ghcr.io/premai-io/prem-gateway/dnsd:v.0.0.1"
+      "image": "ghcr.io/premai-io/prem-gateway/dnsd:v.0.0.1",
+      "digest": "sha256:7bd337ef3dc2a73c2342481b1bca17ac9eb97cd9a5441476ea3cf0ca3cc27830"
     },
     "controllerd": {
       "version": "v.0.0.1",
-      "digest": "sha256:ae27a9d251b7584e49e259e87bc5669dacb143234924fc82b46f76e2880ad4b2",
-      "image": "ghcr.io/premai-io/prem-gateway/controllerd:v.0.0.1"
+      "image": "ghcr.io/premai-io/prem-gateway/controllerd:v.0.0.1",
+      "digest": "sha256:ae27a9d251b7584e49e259e87bc5669dacb143234924fc82b46f76e2880ad4b2"
     },
     "authd": {
       "version": "v.0.0.1",
