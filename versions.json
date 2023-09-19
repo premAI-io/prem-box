@@ -22,8 +22,8 @@
     },
     "authd": {
       "version": "v.0.0.1",
-      "digest": "sha256:f2b1700bf13a648cb63ff63dd033dbbfe046063886b2ee1a1ac5c9def035baef",
-      "image": "ghcr.io/premai-io/prem-gateway/authd:v.0.0.1"
+      "image": "ghcr.io/premai-io/prem-gateway/authd:v.0.0.1",
+      "digest": "sha256:f2b1700bf13a648cb63ff63dd033dbbfe046063886b2ee1a1ac5c9def035baef"
     }
   }
 }
