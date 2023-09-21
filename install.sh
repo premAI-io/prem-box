@@ -234,49 +234,32 @@ daemon_version=$(echo "$versions_json" | jq -r '.prem.daemon.version')
 daemon_image=$(echo "$versions_json" | jq -r '.prem.daemon.image')
 daemon_digest=$(echo "$versions_json" | jq -r '.prem.daemon.digest')
 
-echo "Daemon Version: $daemon_version"
-echo "Daemon Image: $daemon_image"
-echo "Daemon Digest: $daemon_digest"
-
 # Extract the 'dnsd' details
 dnsd_version=$(echo "$versions_json" | jq -r '.prem.dnsd.version')
 dnsd_image=$(echo "$versions_json" | jq -r '.prem.dnsd.image')
 dnsd_digest=$(echo "$versions_json" | jq -r '.prem.dnsd.digest')
-
-echo "Dnsd Version: $dnsd_version"
-echo "Dnsd Image: $dnsd_image"
-echo "Dnsd Digest: $dnsd_digest"
 
 # Extract the 'controllerd' details
 controllerd_version=$(echo "$versions_json" | jq -r '.prem.controllerd.version')
 controllerd_image=$(echo "$versions_json" | jq -r '.prem.controllerd.image')
 controllerd_digest=$(echo "$versions_json" | jq -r '.prem.controllerd.digest')
 
-echo "Controllerd Version: $controllerd_version"
-echo "Controllerd Image: $controllerd_image"
-echo "Controllerd Digest: $controllerd_digest"
-
 # Extract the 'authd' details
 authd_version=$(echo "$versions_json" | jq -r '.prem.authd.version')
 authd_image=$(echo "$versions_json" | jq -r '.prem.authd.image')
 authd_digest=$(echo "$versions_json" | jq -r '.prem.authd.digest')
 
-echo "Authd Version: $authd_version"
-echo "Authd Image: $authd_image"
-echo "Authd Digest: $authd_digest"
-
 set -e
 
 echo "🏁 Starting Prem..."
 
-export PREM_APP_IMAGE=${app_image}:${app_version}@${app_digest}
-export PREM_DAEMON_IMAGE=${daemon_image}:${daemon_version}@${daemon_digest}
-export PREMG_DNSD_IMAGE=${dnsd_image}:${dnsd_version}@${dnsd_digest}
-export PREMG_CONTROLLERD_IMAGE=${controllerd_image}:${controllerd_version}@${controllerd_digest}
-export PREMG_AUTHD_IMAGE=${authd_image}:${authd_version}@${authd_digest}
+export PREM_APP_IMAGE=${app_image}@${app_digest}
+export PREM_DAEMON_IMAGE=${daemon_image}@${daemon_digest}
+export PREMG_DNSD_IMAGE=${dnsd_image}@${dnsd_digest}
+export PREMG_CONTROLLERD_IMAGE=${controllerd_image}@${controllerd_digest}
+export PREMG_AUTHD_IMAGE=${authd_image}@${authd_digest}
 export SENTRY_DSN=${SENTRY_DSN}
 export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
-
 
 # Check for GPU and install drivers if necessary
 if has_gpu; then
@@ -295,20 +278,18 @@ else
         y|Y)
             echo "Installing prem-gateway, prem-app, and prem-daemon..."
 
-            # Check for existing PostgreSQL password in environment variable
-            if [ -z "$POSTGRES_PASSWORD" ]; then
-                read -s -p "Enter your PostgreSQL password: " POSTGRES_PASSWORD
-                echo  # Adds a newline after password input
-            fi
-            export POSTGRES_PASSWORD
+            # Prompt the user for the PostgreSQL password
+            read -s -p "Enter your prem-gateway's dnsd PostgreSQL password: " POSTGRES_PASSWORD
+            echo  # Adds a newline after password input
 
+            export POSTGRES_PASSWORD
             export LETSENCRYPT_PROD=true
             export SERVICES=premd,premapp
             export POSTGRES_USER=root
             export POSTGRES_PASSWORD=secret
             export POSTGRES_DB=dnsd-db
 
-            docker-compose -f ~/prem/docker-compose.premg.yml up -d --build || exit 1
+            docker-compose -f ~/prem/docker-compose.premg.yml up -d || exit 1
 
             # Loop to check for 'OK' from curl command with maximum 10 retries
             retries=0
@@ -326,7 +307,7 @@ else
 
             [ "$response" == "OK" ] || { echo "Failed to receive OK response."; exit 1; }
 
-            docker-compose -f ~/prem/docker-compose.premapp.premd.yml up -d --build || exit 1
+            docker-compose -f ~/prem/docker-compose.premapp.premd.yml up -d || exit 1
             ;;
         *)
             echo "Skipping installation of prem-gateway. Running docker-compose.yml"
@@ -335,9 +316,13 @@ else
     esac
 fi
 
-
 echo -e "🎉 Congratulations! Your Prem instance is ready to use"
-echo "Please visit http://$(curl -4s https://ifconfig.io):8000 to get started."
+
+if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+    echo "Please visit http://$(curl -4s https://ifconfig.io) to get started."
+else
+    echo "Please visit http://$(curl -4s https://ifconfig.io):8000 to get started."
+fi
 
 curl --silent -X POST https://analytics.prem.ninja/api/event \
     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 OPR/71.0.3770.284' \

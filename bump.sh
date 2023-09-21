@@ -12,15 +12,15 @@ daemon_image="premd"
 
 dnsd="dnsd"
 dnsd_repo="prem-gateway"
-dnsd_image="prem-gateway/dnsd"
+dnsd_image="dnsd"
 
 controllerd="controllerd"
 controllerd_repo="prem-gateway"
-controllerd_image="prem-gateway/controllerd"
+controllerd_image="controllerd"
 
 auth="authd"
 auth_repo="prem-gateway"
-auth_image="prem-gateway/authd"
+auth_image="authd"
 
 # JSON file
 json_file="versions.json"
@@ -42,9 +42,9 @@ bump_to_latest_tag() {
     echo "Image digest: $image_digest"
 
 
-    # Update JSON with new tag and digest
-    jq --arg rep "$2" --arg ver "$latest_release" --arg dig "$image_digest" \
-    '.prem[$rep].version = $ver | .prem[$rep].digest = $dig' $json_file > temp.json && mv temp.json $json_file
+    # Update JSON with new tag, digest, and image
+    jq --arg rep "$2" --arg ver "$latest_release" --arg img "$image" --arg dig "$image_digest" \
+    '.prem[$rep].version = $ver | .prem[$rep].digest = $dig | .prem[$rep].image = $img' $json_file > temp.json && mv temp.json $json_file
 }
 
 bump_to_latest_tag $app_repo $app $app_image
