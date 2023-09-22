@@ -278,10 +278,19 @@ else
         y|Y)
             echo "Installing prem-gateway, prem-app, and prem-daemon..."
 
-            # Prompt the user for the PostgreSQL password
-            read -s -p "Enter your prem-gateway's dnsd PostgreSQL password: " POSTGRES_PASSWORD
-            echo  # Adds a newline after password input
+            # Check if openssl is available
+            if command -v openssl &> /dev/null
+            then
+                # If openssl is available, use it to generate the password
+                POSTGRES_PASSWORD=$(openssl rand -base64 8)
+                echo "Password generated using openssl: $POSTGRES_PASSWORD"
+            else
+                # If openssl is not available, use dd and base64 to generate the password
+                POSTGRES_PASSWORD=$(dd if=/dev/urandom bs=8 count=1 2>/dev/null | base64)
+                echo "Password generated using dd and base64: $POSTGRES_PASSWORD"
+            fi
 
+            # Export the generated password as an environment variable
             export POSTGRES_PASSWORD
             export LETSENCRYPT_PROD=true
             export SERVICES=premd,premapp
