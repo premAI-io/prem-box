@@ -13,17 +13,17 @@
     "dnsd": {
       "version": "v0.0.1",
       "image": "ghcr.io/premai-io/dnsd:v0.0.1",
-      "digest": "sha256:023b0335ed3c58df0040b7e611127744b69eac515adf67777290bbf9a40e29dc"
+      "digest": "sha256:27655577278649309d8d50ae16ca22f698c4fd2a3449ed58218f7a7c085e76b8"
     },
     "controllerd": {
       "version": "v0.0.1",
       "image": "ghcr.io/premai-io/controllerd:v0.0.1",
-      "digest": "sha256:922d9da0de9ff455dd776c69bb722d8075df5096c6aeb1bd86dcfcb2d196412d"
+      "digest": "sha256:e3616d3d15b0a842bf6edcad2558f08ad742ae0ef94278f37382c3c17d6dfe5e"
     },
     "authd": {
       "version": "v0.0.1",
       "image": "ghcr.io/premai-io/authd:v0.0.1",
-      "digest": "sha256:5bdaf3565cc17a53aa536f11b66575d50634bd4b00ebfa8146b2ebc9a5809ab4"
+      "digest": "sha256:badc5ff2c7cc83c0d48fb4a40db55cb818938c81a8feb17f23bbaaa11f1012ae"
     }
   }
 }
