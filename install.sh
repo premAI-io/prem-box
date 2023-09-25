@@ -108,8 +108,8 @@ echo -e "🤖 Welcome to Prem installer!"
 echo -e "This script will install all requirements to run Prem"
 echo ""
 
-# install curl, jq 
-DEBIAN_FRONTEND=noninteractive sudo apt -qq update -y 
+# install curl, jq
+DEBIAN_FRONTEND=noninteractive sudo apt -qq update -y
 DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y  curl jq
 
 
@@ -278,17 +278,14 @@ else
         y|Y)
             echo "Installing prem-gateway, prem-app, and prem-daemon..."
 
-            # Check if openssl is available
-            if command -v openssl &> /dev/null
+            if ! command -v openssl &> /dev/null
             then
-                # If openssl is available, use it to generate the password
-                POSTGRES_PASSWORD=$(openssl rand -base64 8)
-                echo "Password generated using openssl: $POSTGRES_PASSWORD"
-            else
-                # If openssl is not available, use dd and base64 to generate the password
-                POSTGRES_PASSWORD=$(dd if=/dev/urandom bs=8 count=1 2>/dev/null | base64)
-                echo "Password generated using dd and base64: $POSTGRES_PASSWORD"
+                sudo apt-get update -qq
+                sudo apt-get install -y openssl
             fi
+
+            POSTGRES_PASSWORD=$(openssl rand -base64 8)
+            echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > ~/prem/secrets
 
             # Export the generated password as an environment variable
             export POSTGRES_PASSWORD
@@ -303,18 +300,26 @@ else
             # Loop to check for 'OK' from curl command with maximum 10 retries
             retries=0
             while [ $retries -lt 10 ]; do
-              response=$(curl -s --fail http://localhost:8080/ping)
-              if [ "$response" == "OK" ]; then
-                echo "Received OK. Proceeding to next step."
-                break
-              else
-                echo "Waiting for OK response..."
-                sleep 2
-                retries=$((retries + 1))
-              fi
+                response=$(set +e; curl -s --fail http://localhost:8080/ping; set -e)
+                if [ "$response" == "OK" ]; then
+                    echo "Received OK. Proceeding to next step."
+                    break
+                else
+                    echo "Waiting for OK response..."
+                    sleep 2
+                    retries=$((retries + 1))
+                fi
             done
 
             [ "$response" == "OK" ] || { echo "Failed to receive OK response."; exit 1; }
+
+            BASIC_AUTH_USER="admin"
+            BASIC_AUTH_PASS=$(openssl rand -base64 4)
+            HASH=$(openssl passwd -apr1 BASIC_AUTH_PASS)
+
+            BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
+            echo "BASIC_AUTH_USER_PASS=$BASIC_AUTH_USER:$BASIC_AUTH_PASS" >> ~/prem/secrets
+            export BASIC_AUTH_CREDENTIALS
 
             docker-compose -f ~/prem/docker-compose.premapp.premd.yml up -d || exit 1
             ;;
@@ -332,6 +337,9 @@ if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
 else
     echo "Please visit http://$(curl -4s https://ifconfig.io):8000 to get started."
 fi
+
+echo "Basic auth user: $BASIC_AUTH_USER"
+echo "Basic auth pass: $BASIC_AUTH_PASS"
 
 curl --silent -X POST https://analytics.prem.ninja/api/event \
     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 OPR/71.0.3770.284' \
