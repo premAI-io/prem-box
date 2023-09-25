@@ -218,7 +218,7 @@ if [ $FORCE -ne 1 ]; then
 fi
 
 echo "⬇️ Pulling latest version..."
-versions_json=$(curl --silent https://raw.githubusercontent.com/premAI-io/prem-box/main/versions.json)
+versions_json=$(curl --silent htt ps://raw.githubusercontent.com/premAI-io/prem-box/main/versions.json)
 
 # Extract the 'app' details
 app_version=$(echo "$versions_json" | jq -r '.prem.app.version')
@@ -315,10 +315,11 @@ else
 
             BASIC_AUTH_USER="admin"
             BASIC_AUTH_PASS=$(openssl rand -base64 4)
-            HASH=$(openssl passwd -apr1 BASIC_AUTH_PASS)
+
+            HASH=$(openssl passwd -apr1 $BASIC_AUTH_PASS)
 
             BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
-            echo "BASIC_AUTH_USER_PASS=$BASIC_AUTH_USER:$BASIC_AUTH_PASS" >> ~/prem/secrets
+            echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> ~/prem/secrets
             export BASIC_AUTH_CREDENTIALS
 
             docker-compose -f ~/prem/docker-compose.premapp.premd.yml up -d || exit 1
