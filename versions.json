@@ -11,19 +11,19 @@
       "digest": "sha256:ca9b546899eb9c53ee69551ac3a8a6ac363c6d7de5eda545df375a00df73a36c"
     },
     "dnsd": {
-      "version": "v0.0.1",
-      "image": "ghcr.io/premai-io/dnsd:v0.0.1",
-      "digest": "sha256:27655577278649309d8d50ae16ca22f698c4fd2a3449ed58218f7a7c085e76b8"
+      "version": "v0.0.2",
+      "image": "ghcr.io/premai-io/dnsd:v0.0.2",
+      "digest": "sha256:a0ca77ecb291c18d5146174f8e4fa4f2f032c4f591d1a4ea5efcc857134e2047"
     },
     "controllerd": {
-      "version": "v0.0.1",
-      "image": "ghcr.io/premai-io/controllerd:v0.0.1",
-      "digest": "sha256:e3616d3d15b0a842bf6edcad2558f08ad742ae0ef94278f37382c3c17d6dfe5e"
+      "version": "v0.0.2",
+      "image": "ghcr.io/premai-io/controllerd:v0.0.2",
+      "digest": "sha256:e1ecde8a33d6f45cb701d1e3a6bbae3e633060b6368e3e2ca75915c1c08eb0e7"
     },
     "authd": {
-      "version": "v0.0.1",
-      "image": "ghcr.io/premai-io/authd:v0.0.1",
-      "digest": "sha256:badc5ff2c7cc83c0d48fb4a40db55cb818938c81a8feb17f23bbaaa11f1012ae"
+      "version": "v0.0.2",
+      "image": "ghcr.io/premai-io/authd:v0.0.2",
+      "digest": "sha256:111f883b52237d3a89494056bcb8aa1c094799e6586cf7a930520f1e60d59f2e"
     }
   }
 }
