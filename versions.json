@@ -1,14 +1,14 @@
 {
   "prem": {
     "app": {
-      "version": "v0.0.29",
+      "version": "v0.0.30",
       "image": "ghcr.io/premai-io/prem-app",
-      "digest": "sha256:c8efa1da502ab365746596d07d23c16a276c9bf96c095d5c4151bbd58abf9ea4"
+      "digest": "sha256:8079023f675197dc0ff50cf4fcb19e6e654a6bccbcebc2aca7f1c0457649358d"
     },
     "daemon": {
-      "version": "v0.0.23",
+      "version": "v0.0.24",
       "image": "ghcr.io/premai-io/premd",
-      "digest": "sha256:2a741292028739e4f02ae933226e8ee48776f1bf894532c7bb2c65e528aedcc0"
+      "digest": "sha256:ca9b546899eb9c53ee69551ac3a8a6ac363c6d7de5eda545df375a00df73a36c"
     }
   }
 }
