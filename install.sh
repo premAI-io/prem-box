@@ -25,7 +25,7 @@ DOCKER_VERSION_OK="nok"
 PREM_APP_ID=$(cat /proc/sys/kernel/random/uuid)
 PREM_AUTO_UPDATE=false
 
-PREM_CONF_FOUND=$(find ~ -path '*/prem/.env')
+PREM_CONF_FOUND=$(find ~ -path "$HOME/prem/.env")
 
 if [ $NO_TRACK -eq 1 ]; then
     SENTRY_DSN=''
@@ -50,11 +50,11 @@ PREM_HOSTED_ON=docker
 PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
     # pull latest docker compose file from main branches
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.yml -o ~/prem/docker-compose.yml
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.premg.yml -o ~/prem/docker-compose.premg.yml
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.premapp.premd.yml -o ~/prem/docker-compose.premapp.premd.yml
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/Caddyfile -o ~/prem/Caddyfile
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.yml -o $HOME/prem/docker-compose.yml
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.premg.yml -o $HOME/prem/docker-compose.premg.yml
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.premapp.premd.yml -o $HOME/prem/docker-compose.premapp.premd.yml
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.gpu.yml -o $HOME/prem/docker-compose.gpu.yml
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/Caddyfile -o $HOME/prem/Caddyfile
 }
 # Function to check for NVIDIA GPU
 has_gpu() {
@@ -99,8 +99,8 @@ install_nvidia_drivers() {
 }
 
 # Making base directory for prem
-if [ ! -d ~/prem ]; then
-    mkdir ~/prem
+if [ ! -d $HOME/prem ]; then
+    mkdir $HOME/prem
 fi
 
 echo ""
@@ -110,7 +110,7 @@ echo ""
 
 # install curl, jq
 DEBIAN_FRONTEND=noninteractive sudo apt -qq update -y
-DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y  curl jq
+DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y curl jq
 
 
 # Check docker version
@@ -279,7 +279,7 @@ case "$with_gateway" in
         fi
 
         POSTGRES_PASSWORD=$(openssl rand -base64 8)
-        echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > ~/prem/secrets
+        echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > $HOME/prem/secrets
 
         # Export the generated password as an environment variable
         export POSTGRES_PASSWORD
@@ -289,7 +289,7 @@ case "$with_gateway" in
         export POSTGRES_PASSWORD=secret
         export POSTGRES_DB=dnsd-db
 
-        docker-compose -f ~/prem/docker-compose.premg.yml up -d || exit 1
+        docker-compose -f $HOME/prem/docker-compose.premg.yml up -d || exit 1
 
         # Loop to check for 'OK' from curl command with maximum 10 retries
         retries=0
