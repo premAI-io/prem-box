@@ -266,6 +266,7 @@ read -p "Do you want to install prem-gateway with prem-app and prem-daemon? [y/N
 case "$with_gateway" in
     y|Y)
         echo "Installing prem-gateway, prem-app, and prem-daemon..."
+        sudo docker network create prem-gateway
 
         if ! command -v openssl &> /dev/null
         then
