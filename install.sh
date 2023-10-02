@@ -266,7 +266,14 @@ read -p "Do you want to install prem-gateway with prem-app and prem-daemon? [y/N
 case "$with_gateway" in
     y|Y)
         echo "Installing prem-gateway, prem-app, and prem-daemon..."
-        sudo docker network create prem-gateway
+
+        # Check if the network exists
+        docker network ls | grep prem-gateway > /dev/null 2>&1
+
+        # If the network doesn't exist (grep exit code is not 0), create it
+        if [ $? -ne 0 ]; then
+          docker network create prem-gateway
+        fi
 
         if ! command -v openssl &> /dev/null
         then
