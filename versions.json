@@ -9,6 +9,21 @@
       "version": "v0.0.26",
       "image": "ghcr.io/premai-io/premd",
       "digest": "sha256:1ba0232f94353cf72723a25e9f397de2bbc086e54b64b7abbd0f1ffd4823dc26"
+    },
+    "dnsd": {
+      "version": "v0.0.2",
+      "image": "ghcr.io/premai-io/dnsd:v0.0.2",
+      "digest": "sha256:a0ca77ecb291c18d5146174f8e4fa4f2f032c4f591d1a4ea5efcc857134e2047"
+    },
+    "controllerd": {
+      "version": "v0.0.2",
+      "image": "ghcr.io/premai-io/controllerd:v0.0.2",
+      "digest": "sha256:e1ecde8a33d6f45cb701d1e3a6bbae3e633060b6368e3e2ca75915c1c08eb0e7"
+    },
+    "authd": {
+      "version": "v0.0.2",
+      "image": "ghcr.io/premai-io/authd:v0.0.2",
+      "digest": "sha256:111f883b52237d3a89494056bcb8aa1c094799e6586cf7a930520f1e60d59f2e"
     }
   }
 }
