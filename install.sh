@@ -262,10 +262,18 @@ export SENTRY_DSN=${SENTRY_DSN}
 export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 
 # Ask user if they want to install prem-gateway with prem-app and prem-daemon
-read -p "Do you want to install prem-gateway with prem-app and prem-daemon? [y/N]: " with_gateway
+read -p "Do you want to install prem-gateway with prem-app and prem-daemon? [yY/Nn]: " with_gateway
 case "$with_gateway" in
     y|Y)
         echo "Installing prem-gateway, prem-app, and prem-daemon..."
+
+        # Check if the network exists
+        docker network ls | grep prem-gateway > /dev/null 2>&1
+
+        # If the network doesn't exist (grep exit code is not 0), create it
+        if [ $? -ne 0 ]; then
+          docker network create prem-gateway
+        fi
 
         if ! command -v openssl &> /dev/null
         then
@@ -301,17 +309,6 @@ case "$with_gateway" in
         done
 
         [ "$response" == "OK" ] || { echo "Failed to receive OK response."; exit 1; }
-
-        BASIC_AUTH_USER="admin"
-        BASIC_AUTH_PASS=$(openssl rand -base64 4)
-
-        HASH=$(openssl passwd -apr1 $BASIC_AUTH_PASS)
-
-        BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
-        echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> ~/prem/secrets
-        export BASIC_AUTH_CREDENTIALS
-
-        docker-compose -f ~/prem/docker-compose.premapp.premd.yml up -d || exit 1
         ;;
     *)
         echo "Proceeding without prem-gateway installation."
@@ -327,12 +324,37 @@ if has_gpu; then
         exit 0
     fi
 
-    echo "nvidia-smi is available. Running docker-compose.gpu.yml"
-    docker-compose -f ~/prem/docker-compose.yml -f ~/prem/docker-compose.gpu.yml up -d
+    if [[ "$with_gateway" != "y" && "$with_gateway" != "Y" ]]; then
+         echo "nvidia-smi is available. Running prem-app and prem-daemon with gpu"
+         docker-compose -f ~/prem/docker-compose.yml -f ~/prem/docker-compose.gpu.yml up -d
+    else
+         echo "nvidia-smi is available. Running prem-gateway, prem-app and prem-daemon with gpu"
+         BASIC_AUTH_USER="admin"
+         BASIC_AUTH_PASS=$(openssl rand -base64 4)
+
+         HASH=$(openssl passwd -apr1 $BASIC_AUTH_PASS)
+
+         BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
+         echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> ~/prem/secrets
+         export BASIC_AUTH_CREDENTIALS
+
+         docker-compose -f ~/prem/docker-compose.premapp.premd.yml -f ~/prem/docker-compose.gpu.yml up -d || exit 1
+    fi
 else
    if [[ "$with_gateway" != "y" && "$with_gateway" != "Y" ]]; then
      echo "nvidia-smi is not available. Running docker-compose.yml"
      docker-compose -f ~/prem/docker-compose.yml up -d || exit 1
+   else
+      BASIC_AUTH_USER="admin"
+      BASIC_AUTH_PASS=$(openssl rand -base64 4)
+
+      HASH=$(openssl passwd -apr1 $BASIC_AUTH_PASS)
+
+      BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
+      echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> ~/prem/secrets
+      export BASIC_AUTH_CREDENTIALS
+
+      docker-compose -f ~/prem/docker-compose.premapp.premd.yml up -d || exit 1
    fi
 fi
 
