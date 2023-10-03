@@ -4,13 +4,14 @@
 
 set -eou pipefail
 
-PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/main/manifests.json
+PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/fa36922642bbbcc79b73f3624b7c2fdf940abe2e/manifests.json
 SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
 
 SCRIPT_VERSION="v0.0.1"
 
 USER=premai-io
 REPO=prem-box
+BRANCH=53b1e3c2f623788c3980c259f49cfc09ae30029d
 
 ARCH=$(uname -m)
 WHO=$(whoami)
@@ -50,9 +51,9 @@ PREM_HOSTED_ON=docker
 PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
     # pull latest docker compose file from main branches
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.yml -o ~/prem/docker-compose.yml
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/main/Caddyfile -o ~/prem/Caddyfile
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/$BRANCH/docker-compose.yml -o ~/prem/docker-compose.yml
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/$BRANCH/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
+    curl --silent https://raw.githubusercontent.com/$USER/$REPO/$BRANCH/Caddyfile -o ~/prem/Caddyfile
 }
 # Function to check for NVIDIA GPU
 has_gpu() {
@@ -216,7 +217,7 @@ if [ $FORCE -ne 1 ]; then
 fi
 
 echo "⬇️ Pulling latest version..."
-versions_json=$(curl --silent https://raw.githubusercontent.com/premAI-io/prem-box/main/versions.json)
+versions_json=$(curl --silent https://raw.githubusercontent.com/$USER/$REPO/$BRANCH/versions.json)
 
 # Extract the 'app' details
 app_version=$(echo "$versions_json" | jq -r '.prem.app.version')
