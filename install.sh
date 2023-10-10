@@ -4,14 +4,19 @@
 
 set -eou pipefail
 
-PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/fa36922642bbbcc79b73f3624b7c2fdf940abe2e/manifests.json
-SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
+# Ask user if they want to install prem-gateway with prem-app and prem-daemon
+read -p "Do you want to install prem-gateway with prem-app and prem-daemon? [yY/Nn]: " with_gateway
 
 SCRIPT_VERSION="v0.0.1"
 
-USER=premai-io
-REPO=prem-box
-BRANCH=53b1e3c2f623788c3980c259f49cfc09ae30029d
+DEFAULT_PREM_BOX_USER=premai-io
+DEFAULT_PREM_BOX_BRANCH=main
+DEFAULT_PREM_REGISTRY_BRANCH=main
+
+PREM_BOX_REPO=prem_box
+PREM_BOX_USER=${1:-$DEFAULT_PREM_BOX_USER}
+PREM_BOX_BRANCH=${2:-$DEFAULT_PREM_BOX_BRANCH}
+PREM_REGISTRY_BRANCH=${3:-$DEFAULT_PREM_REGISTRY_BRANCH}
 
 ARCH=$(uname -m)
 WHO=$(whoami)
@@ -26,7 +31,10 @@ DOCKER_VERSION_OK="nok"
 PREM_APP_ID=$(cat /proc/sys/kernel/random/uuid)
 PREM_AUTO_UPDATE=false
 
-PREM_CONF_FOUND=$(find ~ -path '*/prem/.env')
+PREM_CONF_FOUND=$(find ~ -path "$HOME/prem/.env")
+
+PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/$PREM_REGISTRY_BRANCH/manifests.json
+SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
 
 if [ $NO_TRACK -eq 1 ]; then
     SENTRY_DSN=''
@@ -51,9 +59,11 @@ PREM_HOSTED_ON=docker
 PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
     # pull latest docker compose file from main branches
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/$BRANCH/docker-compose.yml -o ~/prem/docker-compose.yml
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/$BRANCH/docker-compose.gpu.yml -o ~/prem/docker-compose.gpu.yml
-    curl --silent https://raw.githubusercontent.com/$USER/$REPO/$BRANCH/Caddyfile -o ~/prem/Caddyfile
+    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.yml -o $HOME/prem/docker-compose.yml
+    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premg.yml -o $HOME/prem/docker-compose.premg.yml
+    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premapp.premd.yml -o $HOME/prem/docker-compose.premapp.premd.yml
+    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.gpu.yml -o $HOME/prem/docker-compose.gpu.yml
+    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/Caddyfile -o $HOME/prem/Caddyfile
 }
 # Function to check for NVIDIA GPU
 has_gpu() {
@@ -98,8 +108,8 @@ install_nvidia_drivers() {
 }
 
 # Making base directory for prem
-if [ ! -d ~/prem ]; then
-    mkdir ~/prem
+if [ ! -d $HOME/prem ]; then
+    mkdir $HOME/prem
 fi
 
 echo ""
@@ -107,9 +117,9 @@ echo -e "🤖 Welcome to Prem installer!"
 echo -e "This script will install all requirements to run Prem"
 echo ""
 
-# install curl, jq 
-DEBIAN_FRONTEND=noninteractive sudo apt -qq update -y 
-DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y  curl jq
+# install curl, jq
+DEBIAN_FRONTEND=noninteractive sudo apt -qq update -y
+DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y curl jq
 
 
 # Check docker version
@@ -217,35 +227,113 @@ if [ $FORCE -ne 1 ]; then
 fi
 
 echo "⬇️ Pulling latest version..."
-versions_json=$(curl --silent https://raw.githubusercontent.com/$USER/$REPO/$BRANCH/versions.json)
+versions_json=$(curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/versions.json)
 
 # Extract the 'app' details
 app_version=$(echo "$versions_json" | jq -r '.prem.app.version')
 app_image=$(echo "$versions_json" | jq -r '.prem.app.image')
 app_digest=$(echo "$versions_json" | jq -r '.prem.app.digest')
 
-echo "App Version: $app_version"
-echo "App Image: $app_image"
-echo "App Digest: $app_digest"
+echo "Prem-App Version: $app_version"
+echo "Prem-App Image: $app_image"
+echo "Prem-App Digest: $app_digest"
 
 # Extract the 'daemon' details
-daemon_version=$(echo "$versions_json" | jq -r '.prem.daemon.version')
+daemon_version=$(echo "$versions_json" | jq -r '.prm.daemon.version')
 daemon_image=$(echo "$versions_json" | jq -r '.prem.daemon.image')
 daemon_digest=$(echo "$versions_json" | jq -r '.prem.daemon.digest')
 
-echo "Daemon Version: $daemon_version"
-echo "Daemon Image: $daemon_image"
-echo "Daemon Digest: $daemon_digest"
+echo "Prem-Daemon Version: $daemon_version"
+echo "Prem-Daemon Image: $daemon_image"
+echo "Prem-Daemon Digest: $daemon_digest"
+
+# Extract the 'dnsd' details
+dnsd_version=$(echo "$versions_json" | jq -r '.prem.dnsd.version')
+dnsd_image=$(echo "$versions_json" | jq -r '.prem.dnsd.image')
+dnsd_digest=$(echo "$versions_json" | jq -r '.prem.dnsd.digest')
+
+echo "Dnsd Version: $dnsd_version"
+echo "Dnsd Image: $dnsd_image"
+echo "Dnsd Digest: $dnsd_digest"
+
+# Extract the 'controllerd' details
+controllerd_version=$(echo "$versions_json" | jq -r '.prem.controllerd.version')
+controllerd_image=$(echo "$versions_json" | jq -r '.prem.controllerd.image')
+controllerd_digest=$(echo "$versions_json" | jq -r '.prem.controllerd.digest')
+
+echo "Controllerd Version: $controllerd_version"
+echo "Controllerd Image: $controllerd_image"
+echo "Controllerd Digest: $controllerd_digest"
+
+# Extract the 'authd' details
+authd_version=$(echo "$versions_json" | jq -r '.prem.authd.version')
+authd_image=$(echo "$versions_json" | jq -r '.prem.authd.image')
+authd_digest=$(echo "$versions_json" | jq -r '.prem.authd.digest')
+
+echo "Authd Version: $authd_version"
+echo "Authd Image: $authd_image"
+echo "Authd Digest: $authd_digest"
 
 set -e
 
 echo "🏁 Starting Prem..."
 
-export PREM_APP_IMAGE=${app_image}:${app_version}@${app_digest}
-export PREM_DAEMON_IMAGE=${daemon_image}:${daemon_version}@${daemon_digest}
+export PREM_APP_IMAGE=${app_image}@${app_digest}
+export PREM_DAEMON_IMAGE=${daemon_image}@${daemon_digest}
+export PREMG_DNSD_IMAGE=${dnsd_image}@${dnsd_digest}
+export PREMG_CONTROLLERD_IMAGE=${controllerd_image}@${controllerd_digest}
+export PREMG_AUTHD_IMAGE=${authd_image}@${authd_digest}
 export SENTRY_DSN=${SENTRY_DSN}
 export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 
+case "$with_gateway" in
+    y|Y)
+        echo "Installing prem-gateway, prem-app, and prem-daemon..."
+
+        # Check if the network exists
+        if ! docker network inspect prem-gateway >/dev/null 2>&1; then
+            docker network create prem-gateway
+        fi
+
+        if ! command -v openssl &> /dev/null
+        then
+            sudo apt-get update -qq
+            sudo apt-get install -y openssl
+        fi
+
+        POSTGRES_PASSWORD=$(openssl rand -base64 8)
+        echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > $HOME/prem/secrets
+
+        # Export the generated password as an environment variable
+        export POSTGRES_PASSWORD
+        export LETSENCRYPT_PROD=true
+        export SERVICES=premd,premapp
+        export POSTGRES_USER=root
+        export POSTGRES_PASSWORD=secret
+        export POSTGRES_DB=dnsd-db
+
+        docker-compose -f $HOME/prem/docker-compose.premg.yml up -d || exit 1
+
+        # Loop to check for 'OK' from curl command with maximum 10 retries
+        retries=0
+        while [ $retries -lt 10 ]; do
+            response=$(set +e; curl -s --fail http://localhost:8080/ping; set -e)
+            if [ "$response" == "OK" ]; then
+                echo "Received OK. Proceeding to next step."
+                break
+            else
+                echo "Waiting for OK response..."
+                sleep 2
+                retries=$((retries + 1))
+            fi
+        done
+
+        [ "$response" == "OK" ] || { echo "Failed to receive OK response."; exit 1; }
+        ;;
+    *)
+        echo "Proceeding without prem-gateway installation."
+        ;;
+esac
 
 # Check for GPU and install drivers if necessary
 if has_gpu; then
@@ -256,15 +344,49 @@ if has_gpu; then
         exit 0
     fi
 
-    echo "nvidia-smi is available. Running docker-compose.gpu.yml"
-    docker-compose -f ~/prem/docker-compose.yml -f ~/prem/docker-compose.gpu.yml up -d
+    if [[ "$with_gateway" != "y" && "$with_gateway" != "Y" ]]; then
+         echo "nvidia-smi is available. Running prem-app and prem-daemon with gpu"
+         docker-compose -f $HOME/prem/docker-compose.yml -f $HOME/prem/docker-compose.gpu.yml up -d
+    else
+         echo "nvidia-smi is available. Running prem-gateway, prem-app and prem-daemon with gpu"
+         BASIC_AUTH_USER="admin"
+         BASIC_AUTH_PASS=$(openssl rand -base64 4)
+
+         HASH=$(openssl passwd -apr1 $BASIC_AUTH_PASS)
+
+         BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
+         echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> $HOME/prem/secrets
+         export BASIC_AUTH_CREDENTIALS
+
+         docker-compose -f $HOME/prem/docker-compose.premapp.premd.yml -f $HOME/prem/docker-compose.gpu.yml up -d || exit 1
+    fi
 else
-    echo "nvidia-smi is not available. Running docker-compose.yml"
-    docker-compose -f ~/prem/docker-compose.yml up -d
+   if [[ "$with_gateway" != "y" && "$with_gateway" != "Y" ]]; then
+     echo "nvidia-smi is not available. Running docker-compose.yml"
+     docker-compose -f $HOME/prem/docker-compose.yml up -d || exit 1
+   else
+      BASIC_AUTH_USER="admin"
+      BASIC_AUTH_PASS=$(openssl rand -base64 4)
+
+      HASH=$(openssl passwd -apr1 $BASIC_AUTH_PASS)
+
+      BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
+      echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> $HOME/prem/secrets
+      export BASIC_AUTH_CREDENTIALS
+
+      docker-compose -f $HOME/prem/docker-compose.premapp.premd.yml up -d || exit 1
+   fi
 fi
 
 echo -e "🎉 Congratulations! Your Prem instance is ready to use"
-echo "Please visit http://$(curl -4s https://ifconfig.io):8000 to get started."
+
+if [[ "$with_gateway" == "y" || "$with_gateway" == "Y" ]]; then
+    echo "Please visit http://$(curl -4s https://ifconfig.io) to get started."
+    echo "Basic auth user: $BASIC_AUTH_USER"
+    echo "Basic auth pass: $BASIC_AUTH_PASS"
+else
+    echo "Please visit http://$(curl -4s https://ifconfig.io):8000 to get started."
+fi
 
 curl --silent -X POST https://analytics.prem.ninja/api/event \
     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 OPR/71.0.3770.284' \
