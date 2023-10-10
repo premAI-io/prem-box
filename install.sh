@@ -13,7 +13,7 @@ DEFAULT_PREM_BOX_USER=premai-io
 DEFAULT_PREM_BOX_BRANCH=main
 DEFAULT_PREM_REGISTRY_BRANCH=main
 
-PREM_BOX_REPO=prem_box
+PREM_BOX_REPO=prem-box
 PREM_BOX_USER=${1:-$DEFAULT_PREM_BOX_USER}
 PREM_BOX_BRANCH=${2:-$DEFAULT_PREM_BOX_BRANCH}
 PREM_REGISTRY_BRANCH=${3:-$DEFAULT_PREM_REGISTRY_BRANCH}
@@ -64,6 +64,7 @@ PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premapp.premd.yml -o $HOME/prem/docker-compose.premapp.premd.yml
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.gpu.yml -o $HOME/prem/docker-compose.gpu.yml
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/Caddyfile -o $HOME/prem/Caddyfile
+    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/versions.json -o $HOME/prem/versions.json
 }
 # Function to check for NVIDIA GPU
 has_gpu() {
@@ -358,7 +359,7 @@ if has_gpu; then
          echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> $HOME/prem/secrets
          export BASIC_AUTH_CREDENTIALS
 
-         docker-compose -f $HOME/prem/docker-compose.premapp.premd.yml -f $HOME/prem/docker-compose.gpu.yml up -d || exit 1
+         docker-compose -f $HOME/prem/docker-compose.premapp.premd.yml -f $HOME/prem/docker-compose.gpu.yml --verbose up -d || exit 1
     fi
 else
    if [[ "$with_gateway" != "y" && "$with_gateway" != "Y" ]]; then

@@ -58,7 +58,10 @@ if [ -z "$(git diff -- $json_file)" ]; then
     echo "No changes detected."
     exit 0
 fi
-
+## Commit & Push to main
+git add $json_file
+git commit -S -m "Bump to latest releases"
+git push origin main
 
 
 
