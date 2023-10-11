@@ -30,8 +30,9 @@ SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/45
 
 PREM_APP_ID=$(cat /proc/sys/kernel/random/uuid)
 PREM_AUTO_UPDATE=false
+ORIGINAL_HOME=$(eval echo ~$SUDO_USER)
 
-PREM_CONF_FOUND=$(find ~ -path "$HOME/prem/.env")
+PREM_CONF_FOUND=$(find ~ -path "$ORIGINAL_HOME/prem/.env")
 
 if [ $NO_TRACK -eq 1 ]; then
     SENTRY_DSN=''
@@ -40,7 +41,7 @@ fi
 if [ -n "$PREM_CONF_FOUND" ]; then
     eval "$(grep ^PREM_APP_ID= $PREM_CONF_FOUND)"
 else
-    PREM_CONF_FOUND=${PREM_CONF_FOUND:="$HOME/prem/.env"}
+    PREM_CONF_FOUND=${PREM_CONF_FOUND:="$ORIGINAL_HOME/prem/.env"}
 fi
 
 # functions
@@ -57,10 +58,10 @@ PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
     # pull latest docker compose file from main branches
     echo "Please wait, we are downloading the latest docker compose files from $PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH"
-    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premg.yml -o $HOME/prem/docker-compose.premg.yml
-    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premapp.premd.yml -o $HOME/prem/docker-compose.premapp.premd.yml
-    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.gpu.yml -o $HOME/prem/docker-compose.gpu.yml
-    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/versions.json -o $HOME/prem/versions.json
+    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premg.yml -o $ORIGINAL_HOME/prem/docker-compose.premg.yml
+    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premapp.premd.yml -o $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml
+    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.gpu.yml -o $ORIGINAL_HOME/prem/docker-compose.gpu.yml
+    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/versions.json -o $ORIGINAL_HOME/prem/versions.json
 }
 # Function to check for NVIDIA GPU
 has_gpu() {
@@ -105,8 +106,8 @@ install_nvidia_drivers() {
 }
 
 # Making base directory for prem
-if [ ! -d $HOME/prem ]; then
-    mkdir $HOME/prem
+if [ ! -d $ORIGINAL_HOME/prem ]; then
+    mkdir $ORIGINAL_HOME/prem
 fi
 
 echo ""
@@ -225,7 +226,7 @@ fi
 
 
 echo "⬇️ Pulling latest version..."
-versions_json=$(cat "$HOME"/prem/versions.json)
+versions_json=$(cat "$ORIGINAL_HOME"/prem/versions.json)
 
 # Extract the 'app' details
 app_version=$(echo "$versions_json" | jq -r '.prem.app.version')
@@ -298,7 +299,7 @@ fi
 
 # Generate a random password for the postgres user
 POSTGRES_PASSWORD=$(openssl rand -base64 8)
-echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > $HOME/prem/secrets
+echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > $ORIGINAL_HOME/prem/secrets
 
 # Export the generated password as an environment variable
 export POSTGRES_PASSWORD
@@ -312,7 +313,7 @@ BASIC_AUTH_USER="admin"
 BASIC_AUTH_PASS=$(openssl rand -base64 4)
 HASH=$(openssl passwd -apr1 $BASIC_AUTH_PASS)
 BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
-echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> $HOME/prem/secrets
+echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> $ORIGINAL_HOME/prem/secrets
 export BASIC_AUTH_CREDENTIALS
 
 echo ""
@@ -326,10 +327,10 @@ if has_gpu; then
         exit 0
     fi
     echo "nvidia-smi is available. Running with gpu support..."
-    docker-compose -f $HOME/prem/docker-compose.premapp.premd.yml -f $HOME/prem/docker-compose.gpu.yml -f $HOME/prem/docker-compose.premg.yml up -d || exit 1
+    docker-compose -f $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml -f $ORIGINAL_HOME/prem/docker-compose.gpu.yml -f $ORIGINAL_HOME/prem/docker-compose.premg.yml up -d || exit 1
 else
     echo "No NVIDIA GPU detected. Running without gpu support..."
-    docker-compose -f $HOME/prem/docker-compose.premapp.premd.yml -f $HOME/prem/docker-compose.premg.yml up -d || exit 1
+    docker-compose -f $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml -f $ORIGINAL_HOME/prem/docker-compose.premg.yml up -d || exit 1
 fi
 
 # Loop to check for 'OK' from curl command with maximum 10 retries
@@ -353,6 +354,8 @@ echo ""
 echo "Please visit http://$(curl -4s https://ifconfig.io) to get started."
 echo "Basic auth user: $BASIC_AUTH_USER"
 echo "Basic auth pass: $BASIC_AUTH_PASS"
+echo ""
+echo "To check again 
 
 curl --silent -X POST https://analytics.prem.ninja/api/event \
     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 OPR/71.0.3770.284' \
