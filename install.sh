@@ -4,9 +4,6 @@
 
 set -eou pipefail
 
-# Ask user if they want to install prem-gateway with prem-app and prem-daemon
-read -p "Do you want to install prem-gateway with prem-app and prem-daemon? [yY/Nn]: " with_gateway
-
 SCRIPT_VERSION="v0.0.1"
 
 DEFAULT_PREM_BOX_USER=premai-io
@@ -225,8 +222,12 @@ if [ $FORCE -ne 1 ]; then
     echo "👷‍♂️ Installing Prem"
 fi
 
+
 PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/$PREM_REGISTRY_BRANCH/manifests.json
 SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
+
+# Ask user if they want to install prem-gateway with prem-app and prem-daemon
+read -p "Do you want to install prem-gateway with prem-app and prem-daemon? [yY/Nn]: " with_gateway
 
 echo "⬇️ Pulling latest version..."
 versions_json=$(cat "$HOME"/prem/versions.json)
