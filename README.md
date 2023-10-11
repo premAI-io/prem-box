@@ -10,8 +10,8 @@ wget -q https://get.prem.ninja/install.sh -O install.sh; sudo bash ./install.sh
 
 The installer script has the following objectives:
 
-- Install all Prem dependencies
-- Run `docker-compose` in order to install Prem in your Infrastructure.
+- Install all Prem dependencies such as Docker, Docker Compose, NVIDIA drivers for GPU etc.
+- Run `docker-compose.*` in order to install Prem in your Infrastructure.
 
 ### Uninstall
 ```bash
