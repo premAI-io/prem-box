@@ -25,6 +25,9 @@ DOCKER_MAJOR=20
 DOCKER_MINOR=10
 DOCKER_VERSION_OK="nok"
 
+PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/$PREM_REGISTRY_BRANCH/manifests.json
+SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
+
 PREM_APP_ID=$(cat /proc/sys/kernel/random/uuid)
 PREM_AUTO_UPDATE=false
 
@@ -221,10 +224,6 @@ fi
 if [ $FORCE -ne 1 ]; then
     echo "👷‍♂️ Installing Prem"
 fi
-
-
-PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/$PREM_REGISTRY_BRANCH/manifests.json
-SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
 
 # Ask user if they want to install prem-gateway with prem-app and prem-daemon
 read -p "Do you want to install prem-gateway with prem-app and prem-daemon? [yY/Nn]: " with_gateway
