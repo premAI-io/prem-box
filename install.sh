@@ -57,11 +57,9 @@ PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
     # pull latest docker compose file from main branches
     echo "Please wait, we are downloading the latest docker compose files from $PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH"
-    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.yml -o $HOME/prem/docker-compose.yml
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premg.yml -o $HOME/prem/docker-compose.premg.yml
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premapp.premd.yml -o $HOME/prem/docker-compose.premapp.premd.yml
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.gpu.yml -o $HOME/prem/docker-compose.gpu.yml
-    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/Caddyfile -o $HOME/prem/Caddyfile
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/versions.json -o $HOME/prem/versions.json
 }
 # Function to check for NVIDIA GPU
@@ -117,9 +115,8 @@ echo -e "This script will install all requirements to run Prem"
 echo ""
 
 # install curl, jq
-DEBIAN_FRONTEND=noninteractive sudo apt -qq update -y
-DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y curl jq
-
+DEBIAN_FRONTEND=noninteractive sudo apt update -qq > /dev/null 2>&1
+DEBIAN_FRONTEND=noninteractive sudo apt install -qq jq curl > /dev/null 2>&1
 
 # Check docker version
 if [ ! -x "$(command -v docker)" ]; then
@@ -225,8 +222,6 @@ if [ $FORCE -ne 1 ]; then
     echo "👷‍♂️ Installing Prem"
 fi
 
-# Ask user if they want to install prem-gateway with prem-app and prem-daemon
-read -p "Do you want to install prem-gateway with prem-app and prem-daemon? [yY/Nn]: " with_gateway
 
 echo "⬇️ Pulling latest version..."
 versions_json=$(cat "$HOME"/prem/versions.json)
@@ -278,7 +273,12 @@ echo "Authd Digest: $authd_digest"
 
 set -e
 
-echo "🏁 Starting Prem..."
+echo "🔧 Configure Prem..."
+
+# Check if the network exists
+if ! docker network inspect prem-gateway >/dev/null 2>&1; then
+    docker network create prem-gateway
+fi
 
 export PREM_APP_IMAGE=${app_image}@${app_digest}
 export PREM_DAEMON_IMAGE=${daemon_image}@${daemon_digest}
@@ -288,55 +288,33 @@ export PREMG_AUTHD_IMAGE=${authd_image}@${authd_digest}
 export SENTRY_DSN=${SENTRY_DSN}
 export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 
-case "$with_gateway" in
-    y|Y)
-        echo "Installing prem-gateway, prem-app, and prem-daemon..."
+if ! command -v openssl &> /dev/null
+then
+    sudo apt-get update -qq
+    sudo apt-get install -y openssl
+fi
 
-        # Check if the network exists
-        if ! docker network inspect prem-gateway >/dev/null 2>&1; then
-            docker network create prem-gateway
-        fi
+# Generate a random password for the postgres user
+POSTGRES_PASSWORD=$(openssl rand -base64 8)
+echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > $HOME/prem/secrets
 
-        if ! command -v openssl &> /dev/null
-        then
-            sudo apt-get update -qq
-            sudo apt-get install -y openssl
-        fi
+# Export the generated password as an environment variable
+export POSTGRES_PASSWORD
+export LETSENCRYPT_PROD=true
+export SERVICES=premd,premapp
+export POSTGRES_USER=root
+export POSTGRES_PASSWORD=secret
+export POSTGRES_DB=dnsd-db
+# Generate a random password for the basic auth user
+BASIC_AUTH_USER="admin"
+BASIC_AUTH_PASS=$(openssl rand -base64 4)
+HASH=$(openssl passwd -apr1 $BASIC_AUTH_PASS)
+BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
+echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> $HOME/prem/secrets
+export BASIC_AUTH_CREDENTIALS
 
-        POSTGRES_PASSWORD=$(openssl rand -base64 8)
-        echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > $HOME/prem/secrets
 
-        # Export the generated password as an environment variable
-        export POSTGRES_PASSWORD
-        export LETSENCRYPT_PROD=true
-        export SERVICES=premd,premapp
-        export POSTGRES_USER=root
-        export POSTGRES_PASSWORD=secret
-        export POSTGRES_DB=dnsd-db
-
-        docker-compose -f $HOME/prem/docker-compose.premg.yml up -d || exit 1
-
-        # Loop to check for 'OK' from curl command with maximum 10 retries
-        retries=0
-        while [ $retries -lt 10 ]; do
-            response=$(set +e; curl -s --fail http://localhost:8080/ping; set -e)
-            if [ "$response" == "OK" ]; then
-                echo "Received OK. Proceeding to next step."
-                break
-            else
-                echo "Waiting for OK response..."
-                sleep 2
-                retries=$((retries + 1))
-            fi
-        done
-
-        [ "$response" == "OK" ] || { echo "Failed to receive OK response."; exit 1; }
-        ;;
-    *)
-        echo "Proceeding without prem-gateway installation."
-        ;;
-esac
-
+echo "🏁 Starting Prem..."
 # Check for GPU and install drivers if necessary
 if has_gpu; then
     if ! check_nvidia_driver; then
@@ -345,50 +323,34 @@ if has_gpu; then
         install_nvidia_drivers
         exit 0
     fi
-
-    if [[ "$with_gateway" != "y" && "$with_gateway" != "Y" ]]; then
-         echo "nvidia-smi is available. Running prem-app and prem-daemon with gpu"
-         docker-compose -f $HOME/prem/docker-compose.yml -f $HOME/prem/docker-compose.gpu.yml up -d
-    else
-         echo "nvidia-smi is available. Running prem-gateway, prem-app and prem-daemon with gpu"
-         BASIC_AUTH_USER="admin"
-         BASIC_AUTH_PASS=$(openssl rand -base64 4)
-
-         HASH=$(openssl passwd -apr1 $BASIC_AUTH_PASS)
-
-         BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
-         echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> $HOME/prem/secrets
-         export BASIC_AUTH_CREDENTIALS
-
-         docker-compose -f $HOME/prem/docker-compose.premapp.premd.yml -f $HOME/prem/docker-compose.gpu.yml --verbose up -d || exit 1
-    fi
+    echo "nvidia-smi is available. Running with gpu support..."
+    docker-compose -f $HOME/prem/docker-compose.premapp.premd.yml -f $HOME/prem/docker-compose.gpu.yml -f $HOME/prem/docker-compose.premg.yml up -d || exit 1
 else
-   if [[ "$with_gateway" != "y" && "$with_gateway" != "Y" ]]; then
-     echo "nvidia-smi is not available. Running docker-compose.yml"
-     docker-compose -f $HOME/prem/docker-compose.yml up -d || exit 1
-   else
-      BASIC_AUTH_USER="admin"
-      BASIC_AUTH_PASS=$(openssl rand -base64 4)
-
-      HASH=$(openssl passwd -apr1 $BASIC_AUTH_PASS)
-
-      BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
-      echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> $HOME/prem/secrets
-      export BASIC_AUTH_CREDENTIALS
-
-      docker-compose -f $HOME/prem/docker-compose.premapp.premd.yml up -d || exit 1
-   fi
+    echo "No NVIDIA GPU detected. Running without gpu support..."
+    docker-compose -f $HOME/prem/docker-compose.premapp.premd.yml -f $HOME/prem/docker-compose.premg.yml up -d || exit 1
 fi
+
+# Loop to check for 'OK' from curl command with maximum 10 retries
+retries=0
+while [ $retries -lt 10 ]; do
+    response=$(set +e; curl -s --fail http://localhost:8080/ping; set -e)
+    if [ "$response" == "OK" ]; then
+        echo "Received OK. Proceeding to next step."
+        break
+    else
+        echo "Waiting for OK response..."
+        sleep 2
+        retries=$((retries + 1))
+    fi
+done
+
+[ "$response" == "OK" ] || { echo "Failed to receive OK response."; exit 1; }
 
 echo -e "🎉 Congratulations! Your Prem instance is ready to use"
-
-if [[ "$with_gateway" == "y" || "$with_gateway" == "Y" ]]; then
-    echo "Please visit http://$(curl -4s https://ifconfig.io) to get started."
-    echo "Basic auth user: $BASIC_AUTH_USER"
-    echo "Basic auth pass: $BASIC_AUTH_PASS"
-else
-    echo "Please visit http://$(curl -4s https://ifconfig.io):8000 to get started."
-fi
+echo ""
+echo "Please visit http://$(curl -4s https://ifconfig.io) to get started."
+echo "Basic auth user: $BASIC_AUTH_USER"
+echo "Basic auth pass: $BASIC_AUTH_PASS"
 
 curl --silent -X POST https://analytics.prem.ninja/api/event \
     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 OPR/71.0.3770.284' \
