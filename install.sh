@@ -33,9 +33,6 @@ PREM_AUTO_UPDATE=false
 
 PREM_CONF_FOUND=$(find ~ -path "$HOME/prem/.env")
 
-PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/$PREM_REGISTRY_BRANCH/manifests.json
-SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
-
 if [ $NO_TRACK -eq 1 ]; then
     SENTRY_DSN=''
 fi
@@ -227,6 +224,9 @@ fi
 if [ $FORCE -ne 1 ]; then
     echo "👷‍♂️ Installing Prem"
 fi
+
+PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/$PREM_REGISTRY_BRANCH/manifests.json
+SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
 
 echo "⬇️ Pulling latest version..."
 versions_json=$(cat "$HOME"/prem/versions.json)
