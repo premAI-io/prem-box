@@ -219,6 +219,7 @@ else
     fi
 fi
 if [ $FORCE -ne 1 ]; then
+    echo ""
     echo "👷‍♂️ Installing Prem"
 fi
 
@@ -273,6 +274,7 @@ echo "Authd Digest: $authd_digest"
 
 set -e
 
+echo ""
 echo "🔧 Configure Prem..."
 
 # Check if the network exists
@@ -313,7 +315,7 @@ BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
 echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> $HOME/prem/secrets
 export BASIC_AUTH_CREDENTIALS
 
-
+echo ""
 echo "🏁 Starting Prem..."
 # Check for GPU and install drivers if necessary
 if has_gpu; then
