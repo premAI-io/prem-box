@@ -59,6 +59,7 @@ PREM_HOSTED_ON=docker
 PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
     # pull latest docker compose file from main branches
+    echo "Please wait, we are downloading the latest docker compose files from $PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH"
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.yml -o $HOME/prem/docker-compose.yml
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premg.yml -o $HOME/prem/docker-compose.premg.yml
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premapp.premd.yml -o $HOME/prem/docker-compose.premapp.premd.yml
@@ -228,7 +229,7 @@ if [ $FORCE -ne 1 ]; then
 fi
 
 echo "⬇️ Pulling latest version..."
-versions_json=$(curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/versions.json)
+versions_json=$(cat "$HOME"/prem/versions.json)
 
 # Extract the 'app' details
 app_version=$(echo "$versions_json" | jq -r '.prem.app.version')
