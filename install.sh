@@ -355,7 +355,8 @@ echo "Please visit http://$(curl -4s https://ifconfig.io) to get started."
 echo "Basic auth user: $BASIC_AUTH_USER"
 echo "Basic auth pass: $BASIC_AUTH_PASS"
 echo ""
-echo "To check again 
+echo "You secrets are stored in $ORIGINAL_HOME/prem/secrets"
+echo "ie. cat $ORIGINAL_HOME/prem/secrets"
 
 curl --silent -X POST https://analytics.prem.ninja/api/event \
     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 OPR/71.0.3770.284' \
