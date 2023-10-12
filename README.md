@@ -20,7 +20,7 @@ wget -q https://get.prem.ninja/uninstall.sh -O uninstall.sh; sudo bash ./uninsta
 
 ### Release Process
 
-When a new version (tag) of [Prem App](https://github.com/premAI-io/prem-app) or [Prem Daemon](https://github.com/premAI-io/prem-daemon) has been released, the next step is to update Prem Box repository accordingly. In order to do that you will need to run the `bump.sh` script.
+When a new version (tag) of [Prem App](https://github.com/premAI-io/prem-app), [Prem Daemon](https://github.com/premAI-io/prem-daemon) or [Prem Gateway](https://github.com/premAI-io/prem-gateway) has been released, the next step is to update Prem Box repository accordingly. In order to do that you will need to run the `bump.sh` script.
 
 ```sh
 bash bump.sh
