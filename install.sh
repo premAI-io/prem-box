@@ -26,7 +26,6 @@ DOCKER_MINOR=10
 DOCKER_VERSION_OK="nok"
 
 PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/$PREM_REGISTRY_BRANCH/manifests.json
-SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
 
 PREM_APP_ID=$(cat /proc/sys/kernel/random/uuid)
 PREM_AUTO_UPDATE=false
@@ -34,9 +33,6 @@ ORIGINAL_HOME=$(eval echo ~$SUDO_USER)
 
 PREM_CONF_FOUND=$(find ~ -path "$ORIGINAL_HOME/prem/config")
 
-if [ $NO_TRACK -eq 1 ]; then
-    SENTRY_DSN=''
-fi
 
 if [ -n "$PREM_CONF_FOUND" ]; then
     eval "$(grep ^PREM_APP_ID= $PREM_CONF_FOUND)"
@@ -358,8 +354,10 @@ echo ""
 echo "You secrets are stored in $ORIGINAL_HOME/prem/secrets"
 echo "ie. cat $ORIGINAL_HOME/prem/secrets"
 
-curl --silent -X POST https://analytics.prem.ninja/api/event \
+if [ $NO_TRACK -ne 1 ]; then
+   curl --silent -X POST https://analytics.prem.ninja/api/event \
     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 OPR/71.0.3770.284' \
     -H 'X-Forwarded-For: 127.0.0.1' \
     -H 'Content-Type: application/json' \
     --data '{"name":"linux_install","url":"https://premai.io","domain":"premai.io"}'
+fi
