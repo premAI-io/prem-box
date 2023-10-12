@@ -26,18 +26,21 @@ DOCKER_MINOR=10
 DOCKER_VERSION_OK="nok"
 
 PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/$PREM_REGISTRY_BRANCH/manifests.json
+SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
 
 PREM_APP_ID=$(cat /proc/sys/kernel/random/uuid)
 PREM_AUTO_UPDATE=false
 ORIGINAL_HOME=$(eval echo ~$SUDO_USER)
 
 PREM_CONF_FOUND=$(find ~ -path "$ORIGINAL_HOME/prem/config")
-
-
 if [ -n "$PREM_CONF_FOUND" ]; then
     eval "$(grep ^PREM_APP_ID= $PREM_CONF_FOUND)"
 else
     PREM_CONF_FOUND=${PREM_CONF_FOUND:="$ORIGINAL_HOME/prem/config"}
+fi
+
+if [ $NO_TRACK -eq 1 ]; then
+    SENTRY_DSN=''
 fi
 
 # functions
