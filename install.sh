@@ -4,7 +4,7 @@
 
 set -eou pipefail
 
-SCRIPT_VERSION="v0.0.1"
+SCRIPT_VERSION="v0.1.0"
 
 DEFAULT_PREM_BOX_USER=premai-io
 DEFAULT_PREM_BOX_BRANCH=main
@@ -32,7 +32,7 @@ PREM_APP_ID=$(cat /proc/sys/kernel/random/uuid)
 PREM_AUTO_UPDATE=false
 ORIGINAL_HOME=$(eval echo ~$SUDO_USER)
 
-PREM_CONF_FOUND=$(find ~ -path "$ORIGINAL_HOME/prem/.env")
+PREM_CONF_FOUND=$(find ~ -path "$ORIGINAL_HOME/prem/config")
 
 if [ $NO_TRACK -eq 1 ]; then
     SENTRY_DSN=''
@@ -41,7 +41,7 @@ fi
 if [ -n "$PREM_CONF_FOUND" ]; then
     eval "$(grep ^PREM_APP_ID= $PREM_CONF_FOUND)"
 else
-    PREM_CONF_FOUND=${PREM_CONF_FOUND:="$ORIGINAL_HOME/prem/.env"}
+    PREM_CONF_FOUND=${PREM_CONF_FOUND:="$ORIGINAL_HOME/prem/config"}
 fi
 
 # functions
