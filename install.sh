@@ -237,7 +237,7 @@ echo "Prem-App Image: $app_image"
 echo "Prem-App Digest: $app_digest"
 
 # Extract the 'daemon' details
-daemon_version=$(echo "$versions_json" | jq -r '.prm.daemon.version')
+daemon_version=$(echo "$versions_json" | jq -r '.prem.daemon.version')
 daemon_image=$(echo "$versions_json" | jq -r '.prem.daemon.image')
 daemon_digest=$(echo "$versions_json" | jq -r '.prem.daemon.digest')
 
@@ -282,11 +282,11 @@ if ! docker network inspect prem-gateway >/dev/null 2>&1; then
     docker network create prem-gateway
 fi
 
-export PREM_APP_IMAGE=${app_image}@${app_digest}
-export PREM_DAEMON_IMAGE=${daemon_image}@${daemon_digest}
-export PREMG_DNSD_IMAGE=${dnsd_image}@${dnsd_digest}
-export PREMG_CONTROLLERD_IMAGE=${controllerd_image}@${controllerd_digest}
-export PREMG_AUTHD_IMAGE=${authd_image}@${authd_digest}
+export PREM_APP_IMAGE=${app_image}:${app_version}@${app_digest}
+export PREM_DAEMON_IMAGE=${daemon_image}:${daemon_version}@${daemon_digest}
+export PREMG_DNSD_IMAGE=${dnsd_image}:${dnsd_version}@${dnsd_digest}
+export PREMG_CONTROLLERD_IMAGE=${controllerd_image}:${controllerd_version}@${controllerd_digest}
+export PREMG_AUTHD_IMAGE=${authd_image}:${authd_version}@${authd_digest}
 export SENTRY_DSN=${SENTRY_DSN}
 export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 
