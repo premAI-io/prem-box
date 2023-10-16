@@ -4,7 +4,6 @@ services:
   premd:
     container_name: premd
     image: ${PREM_DAEMON_IMAGE}
-    restart: on-failure
     networks:
       - prem-gateway
     volumes:
@@ -21,11 +20,11 @@ services:
       - "traefik.http.routers.premd.middlewares=premd-strip-prefix"
     ports:
       - "8084:8000"
+    restart: unless-stopped
 
   premapp:
     container_name: premapp
     image: ${PREM_APP_IMAGE}
-    restart: on-failure
     networks:
       - prem-gateway
     environment:
@@ -41,6 +40,7 @@ services:
       - "traefik.http.routers.premapp-http.middlewares=mybasicauth"
     ports:
       - "8085:8080"
+    restart: unless-stopped
 
 networks:
   prem-gateway:

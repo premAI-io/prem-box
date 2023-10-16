@@ -22,7 +22,7 @@ services:
       - traefik-letsencrypt:/letsencrypt
     depends_on:
       - dnsd
-    restart: always
+    restart: unless-stopped
 
   dnsd:
     container_name: dnsd
@@ -41,7 +41,7 @@ services:
       PREM_GATEWAY_DNS_DB_HOST: dnsd-db-pg
     ports:
       - "8082:8080"
-    restart: always
+    restart: unless-stopped
 
   dnsd-db-pg:
     container_name: dnsd-db-pg
@@ -56,7 +56,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - dnsd-pg-data:/var/lib/postgresql/data
-    restart: always
+    restart: unless-stopped
+
   authd:
     container_name: authd
     image: ${PREMG_AUTHD_IMAGE}
@@ -64,7 +65,7 @@ services:
       - prem-gateway
     ports:
       - "8081:8080"
-    restart: always
+    restart: unless-stopped
 
   controllerd:
     container_name: controllerd
@@ -79,6 +80,7 @@ services:
     environment:
       LETSENCRYPT_PROD: ${LETSENCRYPT_PROD}
       SERVICES: ${SERVICES}
+    restart: unless-stopped
 
 networks:
   prem-gateway:
