@@ -17,7 +17,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.premd.rule=PathPrefix(`/premd`)"
       - "traefik.http.middlewares.premd-strip-prefix.stripprefix.prefixes=/premd"
-      - "traefik.http.routers.premd.middlewares=premd-strip-prefix"
+      - "traefik.http.routers.premd.middlewares=auth,premd-strip-prefix"
+      - "traefik.http.middlewares.auth.forwardauth.address=http://authd:8080/auth/verify"
     ports:
       - "8084:8000"
     restart: unless-stopped
@@ -36,8 +37,6 @@ services:
       - "traefik.http.routers.premapp-http.rule=PathPrefix(`/`)"
       - "traefik.http.routers.premapp-http.entrypoints=web"
       - "traefik.http.services.premapp.loadbalancer.server.port=8080"
-      - "traefik.http.middlewares.mybasicauth.basicauth.users=${BASIC_AUTH_CREDENTIALS}"
-      - "traefik.http.routers.premapp-http.middlewares=mybasicauth"
     ports:
       - "8085:8080"
     restart: unless-stopped
