@@ -301,19 +301,26 @@ POSTGRES_PASSWORD=$(openssl rand -base64 8)
 echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > $ORIGINAL_HOME/prem/secrets
 
 # Export the generated password as an environment variable
-export POSTGRES_PASSWORD
-export LETSENCRYPT_PROD=true
-export SERVICES=premd,premapp
 export POSTGRES_USER=root
-export POSTGRES_PASSWORD=secret
-export POSTGRES_DB=dnsd-db
+export POSTGRES_PASSWORD
+export DNSD_POSTGRES_DB=dnsd-db
+export AUTHD_POSTGRES_DB=authd-db
+export LETSENCRYPT_PROD=true
 # Generate a random password for the basic auth user
-BASIC_AUTH_USER="admin"
-BASIC_AUTH_PASS=$(openssl rand -base64 4)
-HASH=$(openssl passwd -apr1 $BASIC_AUTH_PASS)
-BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
-echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> $ORIGINAL_HOME/prem/secrets
-export BASIC_AUTH_CREDENTIALS
+ADMIN_USERNAME="admin"
+ADMIN_PASSWORD=$(openssl rand -base64 4)
+ROOT_API_KEY=$(openssl rand -base64 8)
+
+PREM_GATEWAY_AUTH_ADMIN_USER=$ADMIN_USERNAME
+PREM_GATEWAY_AUTH_ADMIN_PASS=$ADMIN_PASSWORD
+PREM_GATEWAY_AUTH_ROOT_API_KEY=$ROOT_API_KEY
+export PREM_GATEWAY_AUTH_ADMIN_USER
+export PREM_GATEWAY_AUTH_ADMIN_PASS
+export PREM_GATEWAY_AUTH_ROOT_API_KEY
+
+echo "ADMIN_USERNAME=$ADMIN_USERNAME" >> $ORIGINAL_HOME/prem/secrets
+echo "ADMIN_PASSWORD=$ADMIN_PASSWORD" >> $ORIGINAL_HOME/prem/secrets
+echo "ROOT_API_KEY=$ROOT_API_KEY" >> $ORIGINAL_HOME/prem/secrets
 
 echo ""
 echo "🏁 Starting Prem..."
@@ -351,8 +358,8 @@ done
 echo -e "🎉 Congratulations! Your Prem instance is ready to use"
 echo ""
 echo "Please visit http://$(curl -4s https://ifconfig.io) to get started."
-echo "Basic auth user: $BASIC_AUTH_USER"
-echo "Basic auth pass: $BASIC_AUTH_PASS"
+echo "Admin user: $ADMIN_USERNAME"
+echo "Admin pass: $ADMIN_PASSWORD"
 echo ""
 echo "You secrets are stored in $ORIGINAL_HOME/prem/secrets"
 echo "ie. cat $ORIGINAL_HOME/prem/secrets"
