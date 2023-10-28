@@ -305,15 +305,7 @@ export POSTGRES_PASSWORD
 export LETSENCRYPT_PROD=true
 export SERVICES=premd,premapp
 export POSTGRES_USER=root
-export POSTGRES_PASSWORD=secret
 export POSTGRES_DB=dnsd-db
-# Generate a random password for the basic auth user
-BASIC_AUTH_USER="admin"
-BASIC_AUTH_PASS=$(openssl rand -base64 4)
-HASH=$(openssl passwd -apr1 $BASIC_AUTH_PASS)
-BASIC_AUTH_CREDENTIALS="$BASIC_AUTH_USER:$HASH"
-echo "BASIC_AUTH_CREDS=$BASIC_AUTH_USER/$BASIC_AUTH_PASS" >> $ORIGINAL_HOME/prem/secrets
-export BASIC_AUTH_CREDENTIALS
 
 echo ""
 echo "🏁 Starting Prem..."
@@ -351,8 +343,6 @@ done
 echo -e "🎉 Congratulations! Your Prem instance is ready to use"
 echo ""
 echo "Please visit http://$(curl -4s https://ifconfig.io) to get started."
-echo "Basic auth user: $BASIC_AUTH_USER"
-echo "Basic auth pass: $BASIC_AUTH_PASS"
 echo ""
 echo "You secrets are stored in $ORIGINAL_HOME/prem/secrets"
 echo "ie. cat $ORIGINAL_HOME/prem/secrets"

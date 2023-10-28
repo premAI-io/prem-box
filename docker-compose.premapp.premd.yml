@@ -36,8 +36,6 @@ services:
       - "traefik.http.routers.premapp-http.rule=PathPrefix(`/`)"
       - "traefik.http.routers.premapp-http.entrypoints=web"
       - "traefik.http.services.premapp.loadbalancer.server.port=8080"
-      - "traefik.http.middlewares.mybasicauth.basicauth.users=${BASIC_AUTH_CREDENTIALS}"
-      - "traefik.http.routers.premapp-http.middlewares=mybasicauth"
     ports:
       - "8085:8080"
     restart: unless-stopped
