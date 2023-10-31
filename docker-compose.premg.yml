@@ -39,6 +39,7 @@ services:
       - authd
     environment:
       PREM_GATEWAY_DNS_DB_HOST: dnsd-db-pg
+      PREM_GATEWAY_DNS_DB_PASS: ${POSTGRES_PASSWORD}
     ports:
       - "8082:8080"
     restart: unless-stopped
