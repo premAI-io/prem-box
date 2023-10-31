@@ -301,11 +301,11 @@ POSTGRES_PASSWORD=$(openssl rand -base64 8)
 echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" > $ORIGINAL_HOME/prem/secrets
 
 # Export the generated password as an environment variable
-export POSTGRES_PASSWORD
 export LETSENCRYPT_PROD=true
 export SERVICES=premd,premapp
-export POSTGRES_USER=root
 export POSTGRES_DB=dnsd-db
+export POSTGRES_USER=root
+export POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 
 echo ""
 echo "🏁 Starting Prem..."
