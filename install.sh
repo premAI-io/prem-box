@@ -9,11 +9,13 @@ SCRIPT_VERSION="v0.1.0"
 DEFAULT_PREM_BOX_USER=premai-io
 DEFAULT_PREM_BOX_BRANCH=main
 DEFAULT_PREM_REGISTRY_BRANCH=main
+DEFAULT_PREM_AUTO_UPDATE='' # empty/unset means false
 
 PREM_BOX_REPO=prem-box
 PREM_BOX_USER=${1:-$DEFAULT_PREM_BOX_USER}
 PREM_BOX_BRANCH=${2:-$DEFAULT_PREM_BOX_BRANCH}
 PREM_REGISTRY_BRANCH=${3:-$DEFAULT_PREM_REGISTRY_BRANCH}
+PREM_AUTO_UPDATE=${4:-$DEFAULT_PREM_AUTO_UPDATE}
 
 ARCH=$(uname -m)
 WHO=$(whoami)
@@ -29,7 +31,6 @@ PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/$PRE
 SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
 
 PREM_APP_ID=$(cat /proc/sys/kernel/random/uuid)
-PREM_AUTO_UPDATE=false
 ORIGINAL_HOME=$(eval echo ~$SUDO_USER)
 
 PREM_CONF_FOUND=$(find ~ -path "$ORIGINAL_HOME/prem/config")
@@ -60,6 +61,7 @@ PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premg.yml -o $ORIGINAL_HOME/prem/docker-compose.premg.yml
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premapp.premd.yml -o $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.gpu.yml -o $ORIGINAL_HOME/prem/docker-compose.gpu.yml
+    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.autoupdate.yml -o $ORIGINAL_HOME/prem/docker-compose.autoupdate.yml
     curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/versions.json -o $ORIGINAL_HOME/prem/versions.json
 }
 # Function to check for NVIDIA GPU
@@ -309,6 +311,11 @@ export POSTGRES_DB=dnsd-db
 
 echo ""
 echo "🏁 Starting Prem..."
+DCC="docker-compose -f $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml -f $ORIGINAL_HOME/prem/docker-compose.premg.yml"
+# Check for PREM_AUTO_UPDATE and run watchtower if necessary
+if test -n "$PREM_AUTO_UPDATE"; then
+  DCC="$DCC -f docker-compose.autoupdate.yml"
+fi
 # Check for GPU and install drivers if necessary
 if has_gpu; then
     if ! check_nvidia_driver; then
@@ -318,10 +325,10 @@ if has_gpu; then
         exit 0
     fi
     echo "nvidia-smi is available. Running with gpu support..."
-    docker-compose -f $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml -f $ORIGINAL_HOME/prem/docker-compose.gpu.yml -f $ORIGINAL_HOME/prem/docker-compose.premg.yml up -d || exit 1
+    $DCC -f $ORIGINAL_HOME/prem/docker-compose.gpu.yml up -d || exit 1
 else
     echo "No NVIDIA GPU detected. Running without gpu support..."
-    docker-compose -f $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml -f $ORIGINAL_HOME/prem/docker-compose.premg.yml up -d || exit 1
+    $DCC up -d || exit 1
 fi
 
 # Loop to check for 'OK' from curl command with maximum 10 retries
