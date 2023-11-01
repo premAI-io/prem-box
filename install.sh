@@ -314,6 +314,12 @@ echo "🏁 Starting Prem..."
 DCC="docker-compose -f $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml -f $ORIGINAL_HOME/prem/docker-compose.premg.yml"
 # Check for PREM_AUTO_UPDATE and run watchtower if necessary
 if test -n "$PREM_AUTO_UPDATE"; then
+  echo "Using :latest images & auto-updating"
+  export PREM_APP_IMAGE=ghcr.io/premai-io/prem-app:latest
+  export PREM_DAEMON_IMAGE=ghcr.io/premai-io/premd:latest
+  export PREMG_DNSD_IMAGE=ghcr.io/premai-io/dnsd:latest
+  export PREMG_CONTROLLERD_IMAGE=ghcr.io/premai-io/controllerd:latest
+  export PREMG_AUTHD_IMAGE=ghcr.io/premai-io/authd:latest
   DCC="$DCC -f docker-compose.autoupdate.yml"
 fi
 # Check for GPU and install drivers if necessary
