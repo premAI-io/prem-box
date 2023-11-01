@@ -13,6 +13,13 @@ The installer script has the following objectives:
 - Install all Prem dependencies such as Docker, Docker Compose, NVIDIA drivers for GPU etc.
 - Run `docker-compose.*` in order to install Prem in your Infrastructure.
 
+
+### Update
+
+```bash
+wget -q https://get.prem.ninja/update.sh -O update.sh; sudo bash ./update.sh
+```
+
 ### Uninstall
 ```bash
 wget -q https://get.prem.ninja/uninstall.sh -O uninstall.sh; sudo bash ./uninstall.sh
