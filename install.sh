@@ -337,9 +337,14 @@ echo "You secrets are stored in $ORIGINAL_HOME/prem/secrets"
 echo "ie. cat $ORIGINAL_HOME/prem/secrets"
 
 if test $NO_TRACK -ne 1 ; then
-  curl --silent -X POST https://analytics.prem.ninja/api/event \
-    -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 OPR/71.0.3770.284' \
+  case "$OS" in
+    linux) ua="Mozilla/5.0 (X11; Linux) curl/$SCRIPT_VERSION" ;;
+    darwin) ua="Mozilla/5.0 (Macintosh; Mac OS X) curl/$SCRIPT_VERSION" ;;
+    *) ua="Mozilla/5.0 (compatible; $OS) curl/$SCRIPT_VERSION" ;;
+  esac
+  curl -s -X POST https://analytics.prem.ninja/api/event \
+    -H "User-Agent: $ua" \
     -H 'X-Forwarded-For: 127.0.0.1' \
     -H 'Content-Type: application/json' \
-    --data '{"name":"linux_install","url":"https://premai.io","domain":"premai.io"}'
+    --data '{"name":"prem-box","url":"app://prem.ninja/box/$ARCH","domain":"prem.ninja"}'
 fi
