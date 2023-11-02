@@ -4,14 +4,14 @@ set -eou pipefail
 SCRIPT_VERSION="v0.2.0"
 
 # parse CLI options
-PREM_BOX_SLUG=premai-io/prem-box/main
+PREM_BOX_SLUG=premAI-io/prem-box/main
 PREM_REGISTRY_SLUG=premAI-io/prem-registry/main
 FORCE=0
 NO_TRACK=0
 PREM_AUTO_UPDATE=0
 while getopts ":b:r:fnu" arg; do
   case $arg in
-    b) # <box slug>, default "premai-io/prem-box/main"
+    b) # <box slug>, default "premAI-io/prem-box/main"
       PREM_BOX_SLUG="${OPTARG}" ;;
     r) # <registry slug>, default "premAI-io/prem-registry/main"
       PREM_REGISTRY_SLUG="${OPTARG}" ;;
