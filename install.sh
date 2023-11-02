@@ -1,160 +1,152 @@
 #!/usr/bin/env bash
-
-[ ! -n "$BASH_VERSION" ] && echo "You can only run this script with bash, not sh / dash." && exit 1
-
+[ ! -n "$BASH_VERSION" ] && echo >&2 "You can only run this script with bash, not sh / dash." && exit 1
 set -eou pipefail
+SCRIPT_VERSION="v0.2.0"
 
-SCRIPT_VERSION="v0.1.0"
-
-DEFAULT_PREM_BOX_USER=premai-io
-DEFAULT_PREM_BOX_BRANCH=main
-DEFAULT_PREM_REGISTRY_BRANCH=main
-DEFAULT_PREM_AUTO_UPDATE='' # empty/unset means false
-
-PREM_BOX_REPO=prem-box
-PREM_BOX_USER=${1:-$DEFAULT_PREM_BOX_USER}
-PREM_BOX_BRANCH=${2:-$DEFAULT_PREM_BOX_BRANCH}
-PREM_REGISTRY_BRANCH=${3:-$DEFAULT_PREM_REGISTRY_BRANCH}
-PREM_AUTO_UPDATE=${4:-$DEFAULT_PREM_AUTO_UPDATE}
-
-ARCH=$(uname -m)
-WHO=$(whoami)
-DEBUG=0
+# parse CLI options
+PREM_BOX_SLUG=premai-io/prem-box/main
+PREM_REGISTRY_SLUG=premAI-io/prem-registry/main
 FORCE=0
 NO_TRACK=0
+PREM_AUTO_UPDATE=0
+while getopts ":b:r:fnu" arg; do
+  case $arg in
+    b) # <box slug>, default "premai-io/prem-box/main"
+      PREM_BOX_SLUG="${OPTARG}" ;;
+    r) # <registry slug>, default "premAI-io/prem-registry/main"
+      PREM_REGISTRY_SLUG="${OPTARG}" ;;
+    f) # force (re)install
+      FORCE=1 ;;
+    n) # disable tracking
+      NO_TRACK=1 ;;
+    u) # auto-update docker images
+      PREM_AUTO_UPDATE=1 ;;
+    *) # print help
+      echo >&2 "$0 $SCRIPT_VERSION usage:" && sed -nr "s/^ +(\w)\) # /  -\1  /p" $0; exit 1 ;;
+  esac
+done
 
 DOCKER_MAJOR=20
 DOCKER_MINOR=10
 DOCKER_VERSION_OK="nok"
 
-PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/$PREM_REGISTRY_BRANCH/manifests.json
+PREM_REGISTRY_URL=https://raw.githubusercontent.com/$PREM_REGISTRY_SLUG/manifests.json
 SENTRY_DSN=https://75592545ad6b472e9ad7c8ff51740b73@o1068608.ingest.sentry.io/4505244431941632
 
 PREM_APP_ID=$(cat /proc/sys/kernel/random/uuid)
 ORIGINAL_HOME=$(eval echo ~$SUDO_USER)
 
 PREM_CONF_FOUND=$(find ~ -path "$ORIGINAL_HOME/prem/config")
-if [ -n "$PREM_CONF_FOUND" ]; then
-    eval "$(grep ^PREM_APP_ID= $PREM_CONF_FOUND)"
+if test -n "$PREM_CONF_FOUND" ; then
+  eval "$(grep ^PREM_APP_ID= $PREM_CONF_FOUND)"
 else
-    PREM_CONF_FOUND=${PREM_CONF_FOUND:="$ORIGINAL_HOME/prem/config"}
+  PREM_CONF_FOUND=${PREM_CONF_FOUND:="$ORIGINAL_HOME/prem/config"}
 fi
 
-if [ $NO_TRACK -eq 1 ]; then
-    SENTRY_DSN=''
+if test $NO_TRACK = 1 ; then
+  SENTRY_DSN=''
 fi
 
 # functions
 restartDocker() {
-    # Restarting docker daemon
-    sudo systemctl daemon-reload
-    sudo systemctl restart docker
+  sudo systemctl daemon-reload
+  sudo systemctl restart docker
 }
 saveConfiguration() {
-    # write configuration to file
-    echo "PREM_APP_ID=$PREM_APP_ID
+  # write configuration to file
+  echo "PREM_APP_ID=$PREM_APP_ID
 PREM_HOSTED_ON=docker
 PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
-    # pull latest docker compose file from main branches
-    echo "Please wait, we are downloading the latest docker compose files from $PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH"
-    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premg.yml -o $ORIGINAL_HOME/prem/docker-compose.premg.yml
-    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.premapp.premd.yml -o $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml
-    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.gpu.yml -o $ORIGINAL_HOME/prem/docker-compose.gpu.yml
-    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/docker-compose.autoupdate.yml -o $ORIGINAL_HOME/prem/docker-compose.autoupdate.yml
-    curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/versions.json -o $ORIGINAL_HOME/prem/versions.json
+  # pull latest docker compose file from main branches
+  echo "Please wait, we are downloading the latest docker compose files from $PREM_BOX_SLUG"
+  curl --silent https://raw.githubusercontent.com/$PREM_BOX_SLUG/docker-compose.premg.yml -o $ORIGINAL_HOME/prem/docker-compose.premg.yml
+  curl --silent https://raw.githubusercontent.com/$PREM_BOX_SLUG/docker-compose.premapp.premd.yml -o $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml
+  curl --silent https://raw.githubusercontent.com/$PREM_BOX_SLUG/docker-compose.gpu.yml -o $ORIGINAL_HOME/prem/docker-compose.gpu.yml
+  curl --silent https://raw.githubusercontent.com/$PREM_BOX_SLUG/docker-compose.autoupdate.yml -o $ORIGINAL_HOME/prem/docker-compose.autoupdate.yml
+  curl --silent https://raw.githubusercontent.com/$PREM_BOX_SLUG/versions.json -o $ORIGINAL_HOME/prem/versions.json
 }
 # Function to check for NVIDIA GPU
 has_gpu() {
-    if lspci | grep -i 'NVIDIA' > /dev/null 2>&1; then
-        return 0
-    else
-        return 1
-    fi
+  lspci | grep -i 'NVIDIA' > /dev/null 2>&1
 }
 # Function to check for NVIDIA drivers
 check_nvidia_driver() {
-    if command -v nvidia-smi > /dev/null 2>&1 && which nvidia-container-toolkit > /dev/null 2>&1; then
-        return 0
-    else
-        return 1
-    fi
+  command -v nvidia-smi > /dev/null 2>&1 && which nvidia-container-toolkit > /dev/null 2>&1
 }
 
 # Function to install NVIDIA drivers
 install_nvidia_drivers() {
-    export DEBIAN_FRONTEND=noninteractive
-    # Update package list
-    sudo apt -qq update -y
+  export DEBIAN_FRONTEND=noninteractive
+  # Update package list
+  sudo apt -qq update -y
 
-    # Install necessary packages for the NVIDIA driver installation
-    sudo apt -qq install -y build-essential dkms ubuntu-drivers-common
+  # Install necessary packages for the NVIDIA driver installation
+  sudo apt -qq install -y build-essential dkms ubuntu-drivers-common
 
-    # Install the recommended driver
-    sudo ubuntu-drivers autoinstall
+  # Install the recommended driver
+  sudo ubuntu-drivers autoinstall
 
-    # variable and install function for Nvidia-Container Toolkit
-    distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-    echo $distribution
-    curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add -
-    curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-    sudo apt -qq update -y
-    sudo apt install -qq -y nvidia-docker2
-    sudo systemctl restart docker
+  # variable and install function for Nvidia-Container Toolkit
+  distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+  echo $distribution
+  curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add -
+  curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+  sudo apt -qq update -y
+  sudo apt install -qq -y nvidia-docker2
+  sudo systemctl restart docker
 
-    # Reboot system to take effect
-    sudo reboot
+  # Reboot system to take effect
+  sudo reboot
 }
 
 # Making base directory for prem
-if [ ! -d $ORIGINAL_HOME/prem ]; then
-    mkdir $ORIGINAL_HOME/prem
-fi
+mkdir -p $ORIGINAL_HOME/prem
 
-echo ""
-echo -e "🤖 Welcome to Prem installer!"
-echo -e "This script will install all requirements to run Prem"
-echo ""
+echo "==="
+echo "🤖 Welcome to Prem installer!"
+echo "This script will install all requirements to run Prem"
+echo "==="
 
 # install curl, jq
 DEBIAN_FRONTEND=noninteractive sudo apt update -qq > /dev/null 2>&1
 DEBIAN_FRONTEND=noninteractive sudo apt install -qq jq curl > /dev/null 2>&1
 
 # Check docker version
-if [ ! -x "$(command -v docker)" ]; then
-    if [ $FORCE -eq 1 ]; then
-        sh -c "$(curl --silent -fsSL https://get.docker.com)"
-        restartDocker
-    else
-        while true; do
-            read -p "Docker Engine not found, should I install it automatically? [Yy/Nn] " yn
-            case $yn in
-            [Yy]*)
-                echo "Installing Docker."
-                sh -c "$(curl --silent -fsSL https://get.docker.com)"
-                restartDocker
-                break
-                ;;
-            [Nn]*)
-                echo "Please install docker manually and update it to the latest, but at least to $DOCKER_MAJOR.$DOCKER_MINOR"
-                exit 0
-                ;;
-            *) echo "Please answer Y or N." ;;
-            esac
-        done
-    fi
+if test ! -x "$(command -v docker)" ; then
+  if test $FORCE -eq 1 ; then
+    sh -c "$(curl --silent -fsSL https://get.docker.com)"
+    restartDocker
+  else
+    while true; do
+      read -p "Docker Engine not found, should I install it automatically? [Yy/Nn] " yn
+      case $yn in
+        [Yy]*)
+          echo "Installing Docker."
+          sh -c "$(curl --silent -fsSL https://get.docker.com)"
+          restartDocker
+          break
+          ;;
+        [Nn]*)
+          echo "Please install docker manually and update it to the latest, but at least to $DOCKER_MAJOR.$DOCKER_MINOR"
+          exit 0
+          ;;
+        *) echo "Please answer Y or N." ;;
+      esac
+    done
+  fi
 fi
 SERVER_VERSION=$(sudo docker version -f "{{.Server.Version}}")
 SERVER_VERSION_MAJOR=$(echo "$SERVER_VERSION" | cut -d'.' -f 1)
 SERVER_VERSION_MINOR=$(echo "$SERVER_VERSION" | cut -d'.' -f 2)
 
 if [[ "$SERVER_VERSION_MAJOR" -gt "$DOCKER_MAJOR" || ("$SERVER_VERSION_MAJOR" -eq "$DOCKER_MAJOR" && "$SERVER_VERSION_MINOR" -ge "$DOCKER_MINOR") ]]; then
-    DOCKER_VERSION_OK="ok"
+  DOCKER_VERSION_OK="ok"
 fi
 
 if [ $DOCKER_VERSION_OK == 'nok' ]; then
-    echo "Docker version less than $DOCKER_MAJOR.$DOCKER_MINOR, please update it to at least to $DOCKER_MAJOR.$DOCKER_MINOR"
-    exit 1
+  echo >&2 "Docker version less than $DOCKER_MAJOR.$DOCKER_MINOR, please update it to at least to $DOCKER_MAJOR.$DOCKER_MINOR"
+  exit 1
 fi
 
 
@@ -168,63 +160,57 @@ set +e  # disable exit on error
 CURRENT_VERSION=$(docker-compose -v 2>/dev/null | awk '{print $3}' | sed 's/,//' || echo "")
 set -e  # re-enable exit on error
 
-if [ -n "$CURRENT_VERSION" ]; then
-    if version_gt 1.18.0 $CURRENT_VERSION; then
-        echo "Current Docker Compose version is lower than 1.18.0, upgrading..."
-        sudo rm $(which docker-compose)
-    else
-        echo "Docker Compose is up to date."
-    fi
+if test -n "$CURRENT_VERSION" ; then
+  if version_gt 1.18.0 $CURRENT_VERSION; then
+    echo "Current Docker Compose version is lower than 1.18.0, upgrading..."
+    sudo rm $(which docker-compose)
+  else
+    echo "Docker Compose is up to date."
+  fi
 else
-    echo "Installing Docker Compose."
+  echo "Installing Docker Compose."
 fi
 
+# Get the latest version of Docker Compose
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
-# Get the latest version of Docker Compose
 DOCKER_COMPOSE_VERSION=$(curl --silent https://api.github.com/repos/docker/compose/releases/latest | jq .name -r)
-
-
-
-if [ "$ARCH" == 'arm64' ]; then
+case "$ARCH" in
+  arm64|aarch64)
     sudo curl --silent -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-aarch64" -o /usr/local/bin/docker-compose
-fi
-if [ "$ARCH" == 'aarch64' ]; then
+    ;;
+  x86_64)
     sudo curl --silent -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
-fi
-if [ "$ARCH" == 'x86_64' ]; then
-    sudo curl --silent -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
-fi
-
+    ;;
+esac
 sudo chmod +x /usr/local/bin/docker-compose
 
-if [ $FORCE -eq 1 ]; then
-    echo 'Updating Prem configuration.'
-    saveConfiguration
+if test $FORCE -eq 1 ; then
+  echo 'Updating Prem configuration.'
+  saveConfiguration
 else
-    if [ -f "$PREM_CONF_FOUND" ]; then
-        while true; do
-            read -p "Prem configuration found (${PREM_CONF_FOUND}). I will overwrite it, okay?  [Yy/Nn] " yn
-            case $yn in
-            [Yy]*)
-                saveConfiguration
-                break
-                ;;
-            [Nn]*)
-                break
-                ;;
-            *) echo "Please answer Y or N." ;;
-            esac
-        done
-    else
-        saveConfiguration
-    fi
+  if [ -f "$PREM_CONF_FOUND" ]; then
+    while true; do
+      read -p "Prem configuration found (${PREM_CONF_FOUND}). I will overwrite it, okay?  [Yy/Nn] " yn
+      case $yn in
+        [Yy]*)
+          saveConfiguration
+          break
+          ;;
+        [Nn]*)
+          break
+          ;;
+        *) echo "Please answer Y or N." ;;
+      esac
+    done
+  else
+    saveConfiguration
+  fi
 fi
-if [ $FORCE -ne 1 ]; then
-    echo ""
-    echo "👷‍♂️ Installing Prem"
+if test $FORCE -ne 1 ; then
+  echo ""
+  echo "👷‍♂️ Installing Prem"
 fi
-
 
 echo "⬇️ Pulling latest version..."
 versions_json=$(cat "$ORIGINAL_HOME"/prem/versions.json)
@@ -281,7 +267,7 @@ echo "🔧 Configure Prem..."
 
 # Check if the network exists
 if ! docker network inspect prem-gateway >/dev/null 2>&1; then
-    docker network create prem-gateway
+  docker network create prem-gateway
 fi
 
 export PREM_APP_IMAGE=${app_image}:${app_version}@${app_digest}
@@ -292,10 +278,9 @@ export PREMG_AUTHD_IMAGE=${authd_image}:${authd_version}@${authd_digest}
 export SENTRY_DSN=${SENTRY_DSN}
 export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 
-if ! command -v openssl &> /dev/null
-then
-    sudo apt-get update -qq
-    sudo apt-get install -y openssl
+if ! command -v openssl &> /dev/null ; then
+  sudo apt-get update -qq
+  sudo apt-get install -yqq openssl
 fi
 
 # Generate a random password for the postgres user
@@ -313,7 +298,7 @@ echo ""
 echo "🏁 Starting Prem..."
 DCC="docker-compose -f $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml -f $ORIGINAL_HOME/prem/docker-compose.premg.yml"
 # Check for PREM_AUTO_UPDATE and run watchtower if necessary
-if test -n "$PREM_AUTO_UPDATE"; then
+if test $PREM_AUTO_UPDATE = 1; then
   echo "Using :latest images & auto-updating"
   export PREM_APP_IMAGE=ghcr.io/premai-io/prem-app:latest
   export PREM_DAEMON_IMAGE=ghcr.io/premai-io/premd:latest
@@ -324,44 +309,44 @@ if test -n "$PREM_AUTO_UPDATE"; then
 fi
 # Check for GPU and install drivers if necessary
 if has_gpu; then
-    if ! check_nvidia_driver; then
-        echo "NVIDIA GPU detected, but drivers not installed. Installing drivers..."
-        echo "This will reboot your system. Please run this script again after reboot."
-        install_nvidia_drivers
-        exit 0
-    fi
-    echo "nvidia-smi is available. Running with gpu support..."
-    $DCC -f $ORIGINAL_HOME/prem/docker-compose.gpu.yml up -d || exit 1
+  if ! check_nvidia_driver; then
+    echo "NVIDIA GPU detected, but drivers not installed. Installing drivers..."
+    echo "This will reboot your system. Please run this script again after reboot."
+    install_nvidia_drivers
+    exit 0
+  fi
+  echo "nvidia-smi is available. Running with gpu support..."
+  $DCC -f $ORIGINAL_HOME/prem/docker-compose.gpu.yml up -d || exit 1
 else
-    echo "No NVIDIA GPU detected. Running without gpu support..."
-    $DCC up -d || exit 1
+  echo "No NVIDIA GPU detected. Running without gpu support..."
+  $DCC up -d || exit 1
 fi
 
 # Loop to check for 'OK' from curl command with maximum 10 retries
 retries=0
-while [ $retries -lt 10 ]; do
-    response=$(set +e; curl -s --fail http://localhost:8080/ping; set -e)
-    if [ "$response" == "OK" ]; then
-        echo "Received OK. Proceeding to next step."
-        break
-    else
-        echo "Waiting for OK response..."
-        sleep 2
-        retries=$((retries + 1))
-    fi
+while test $retries -lt 10 ; do
+  response=$(set +e; curl -s --fail http://localhost:8080/ping; set -e)
+  if test "$response" = "OK" ; then
+    echo "Received OK. Proceeding to next step."
+    break
+  else
+    echo "Waiting for OK response..."
+    sleep 2
+    retries=$((retries + 1))
+  fi
 done
 
-[ "$response" == "OK" ] || { echo "Failed to receive OK response."; exit 1; }
+test "$response" = "OK" || { echo "Failed to receive OK response."; exit 1; }
 
-echo -e "🎉 Congratulations! Your Prem instance is ready to use"
+echo "🎉 Congratulations! Your Prem instance is ready to use"
 echo ""
 echo "Please visit http://$(curl -4s https://ifconfig.io) to get started."
 echo ""
 echo "You secrets are stored in $ORIGINAL_HOME/prem/secrets"
 echo "ie. cat $ORIGINAL_HOME/prem/secrets"
 
-if [ $NO_TRACK -ne 1 ]; then
-   curl --silent -X POST https://analytics.prem.ninja/api/event \
+if test $NO_TRACK -ne 1 ; then
+  curl --silent -X POST https://analytics.prem.ninja/api/event \
     -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36 OPR/71.0.3770.284' \
     -H 'X-Forwarded-For: 127.0.0.1' \
     -H 'Content-Type: application/json' \
