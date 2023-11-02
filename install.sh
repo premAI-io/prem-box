@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-[ ! -n "$BASH_VERSION" ] && echo >&2 "You can only run this script with bash, not sh / dash." && exit 1
+test ! -n "$BASH_VERSION" && echo >&2 "You can only run this script with bash, not sh / dash." && exit 1
 set -eou pipefail
 SCRIPT_VERSION="v0.2.0"
 
@@ -60,29 +60,21 @@ PREM_AUTO_UPDATE=$PREM_AUTO_UPDATE" >$PREM_CONF_FOUND
 
   # pull latest docker compose file from main branches
   echo "Please wait, we are downloading the latest docker compose files from $PREM_BOX_SLUG"
-  curl --silent https://raw.githubusercontent.com/$PREM_BOX_SLUG/docker-compose.premg.yml -o $ORIGINAL_HOME/prem/docker-compose.premg.yml
-  curl --silent https://raw.githubusercontent.com/$PREM_BOX_SLUG/docker-compose.premapp.premd.yml -o $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml
-  curl --silent https://raw.githubusercontent.com/$PREM_BOX_SLUG/docker-compose.gpu.yml -o $ORIGINAL_HOME/prem/docker-compose.gpu.yml
-  curl --silent https://raw.githubusercontent.com/$PREM_BOX_SLUG/docker-compose.autoupdate.yml -o $ORIGINAL_HOME/prem/docker-compose.autoupdate.yml
-  curl --silent https://raw.githubusercontent.com/$PREM_BOX_SLUG/versions.json -o $ORIGINAL_HOME/prem/versions.json
+  for f in docker-compose.premg.yml docker-compose.premapp.premd.yml docker-compose.gpu.yml docker-compose.autoupdate.yml versions.json; do
+    curl -fsSL https://raw.githubusercontent.com/$PREM_BOX_SLUG/$f -o $ORIGINAL_HOME/prem/$f
+  done
 }
-# Function to check for NVIDIA GPU
 has_gpu() {
   lspci | grep -i 'NVIDIA' > /dev/null 2>&1
 }
-# Function to check for NVIDIA drivers
 check_nvidia_driver() {
   command -v nvidia-smi > /dev/null 2>&1 && which nvidia-container-toolkit > /dev/null 2>&1
 }
-
-# Function to install NVIDIA drivers
 install_nvidia_drivers() {
-  export DEBIAN_FRONTEND=noninteractive
   # Update package list
-  sudo apt -qq update -y
-
+  DEBIAN_FRONTEND=noninteractive sudo apt -qq update
   # Install necessary packages for the NVIDIA driver installation
-  sudo apt -qq install -y build-essential dkms ubuntu-drivers-common
+  DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y build-essential dkms ubuntu-drivers-common
 
   # Install the recommended driver
   sudo ubuntu-drivers autoinstall
@@ -90,10 +82,10 @@ install_nvidia_drivers() {
   # variable and install function for Nvidia-Container Toolkit
   distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
   echo $distribution
-  curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add -
-  curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-  sudo apt -qq update -y
-  sudo apt install -qq -y nvidia-docker2
+  curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add -
+  curl -fsSL https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+  DEBIAN_FRONTEND=noninteractive sudo apt -qq update
+  DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y nvidia-docker2
   sudo systemctl restart docker
 
   # Reboot system to take effect
@@ -109,13 +101,13 @@ echo "This script will install all requirements to run Prem"
 echo "==="
 
 # install curl, jq
-DEBIAN_FRONTEND=noninteractive sudo apt update -qq > /dev/null 2>&1
-DEBIAN_FRONTEND=noninteractive sudo apt install -qq jq curl > /dev/null 2>&1
+DEBIAN_FRONTEND=noninteractive sudo apt -qq update > /dev/null 2>&1
+DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y jq curl > /dev/null 2>&1
 
 # Check docker version
 if test ! -x "$(command -v docker)" ; then
   if test $FORCE -eq 1 ; then
-    sh -c "$(curl --silent -fsSL https://get.docker.com)"
+    sh -c "$(curl -fsSL https://get.docker.com)"
     restartDocker
   else
     while true; do
@@ -123,7 +115,7 @@ if test ! -x "$(command -v docker)" ; then
       case $yn in
         [Yy]*)
           echo "Installing Docker."
-          sh -c "$(curl --silent -fsSL https://get.docker.com)"
+          sh -c "$(curl -fsSL https://get.docker.com)"
           restartDocker
           break
           ;;
@@ -149,7 +141,6 @@ if [ $DOCKER_VERSION_OK == 'nok' ]; then
   exit 1
 fi
 
-
 # Function to compare version numbers
 function version_gt() { test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"; }
 
@@ -174,13 +165,13 @@ fi
 # Get the latest version of Docker Compose
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
-DOCKER_COMPOSE_VERSION=$(curl --silent https://api.github.com/repos/docker/compose/releases/latest | jq .name -r)
+DOCKER_COMPOSE_VERSION=$(curl -fsSL https://api.github.com/repos/docker/compose/releases/latest | jq .name -r)
 case "$ARCH" in
   arm64|aarch64)
-    sudo curl --silent -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-aarch64" -o /usr/local/bin/docker-compose
+    sudo curl -fsSL "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-aarch64" -o /usr/local/bin/docker-compose
     ;;
   x86_64)
-    sudo curl --silent -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
+    sudo curl -fsSL "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-${OS}-${ARCH}" -o /usr/local/bin/docker-compose
     ;;
 esac
 sudo chmod +x /usr/local/bin/docker-compose
@@ -275,12 +266,12 @@ export PREM_DAEMON_IMAGE=${daemon_image}:${daemon_version}@${daemon_digest}
 export PREMG_DNSD_IMAGE=${dnsd_image}:${dnsd_version}@${dnsd_digest}
 export PREMG_CONTROLLERD_IMAGE=${controllerd_image}:${controllerd_version}@${controllerd_digest}
 export PREMG_AUTHD_IMAGE=${authd_image}:${authd_version}@${authd_digest}
-export SENTRY_DSN=${SENTRY_DSN}
-export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
+export SENTRY_DSN
+export PREM_REGISTRY_URL
 
 if ! command -v openssl &> /dev/null ; then
-  sudo apt-get update -qq
-  sudo apt-get install -yqq openssl
+  DEBIAN_FRONTEND=noninteractive sudo apt -qq update
+  DEBIAN_FRONTEND=noninteractive sudo apt -qq install -y openssl
 fi
 
 # Generate a random password for the postgres user
@@ -325,8 +316,8 @@ fi
 # Loop to check for 'OK' from curl command with maximum 10 retries
 retries=0
 while test $retries -lt 10 ; do
-  response=$(set +e; curl -s --fail http://localhost:8080/ping; set -e)
-  if test "$response" = "OK" ; then
+  response=$(set +e; curl -fs http://localhost:8080/ping; set -e)
+  if test "$response" = OK ; then
     echo "Received OK. Proceeding to next step."
     break
   else
@@ -336,7 +327,7 @@ while test $retries -lt 10 ; do
   fi
 done
 
-test "$response" = "OK" || { echo "Failed to receive OK response."; exit 1; }
+test "$response" = OK || { echo "Failed to receive OK response."; exit 1; }
 
 echo "🎉 Congratulations! Your Prem instance is ready to use"
 echo ""
