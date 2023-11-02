@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-
-[ ! -n "$BASH_VERSION" ] && echo "You can only run this script with bash, not sh / dash." && exit 1
-
+test ! -n "$BASH_VERSION" && echo >&2 "You can only run this script with bash, not sh / dash." && exit 1
 set -eou pipefail
 
 echo ""
@@ -9,30 +7,42 @@ echo -e "🤖 Prem updater"
 echo -e "This script will update Prem to latest versions"
 echo ""
 
-
-
 ORIGINAL_HOME=$(eval echo ~$SUDO_USER)
 # Check if the Prem configuration directory exists
-if [ ! -f "$ORIGINAL_HOME/prem/config" ]; then
-    echo "Prem configuration directory ($ORIGINAL_HOME/prem/config) not found."
-    echo "You need to install Prem first. Run 'sudo bash install.sh'."
-    exit 1
+if test ! -f "$ORIGINAL_HOME/prem/config" ; then
+  echo >&2 "Prem configuration directory ($ORIGINAL_HOME/prem/config) not found."
+  echo >&2 "You need to install Prem first. Run 'sudo bash install.sh'."
+  exit 1
 fi
 
-DEFAULT_PREM_BOX_USER=premai-io
-DEFAULT_PREM_BOX_BRANCH=main
-DEFAULT_PREM_REGISTRY_BRANCH=main
+# parse CLI options
+PREM_BOX_SLUG=premAI-io/prem-box/main
+PREM_REGISTRY_SLUG=premAI-io/prem-registry/main
+while getopts ":b:r:fnu" arg; do
+  case $arg in
+    b) # <box slug>, default "premAI-io/prem-box/main"
+      PREM_BOX_SLUG="${OPTARG}" ;;
+    r) # <registry slug>, default "premAI-io/prem-registry/main"
+      PREM_REGISTRY_SLUG="${OPTARG}" ;;
+    *) # print help
+      echo >&2 "$0 $SCRIPT_VERSION usage:" && sed -nr "s/^ +(\w)\) # /  -\1  /p" $0; exit 1 ;;
+  esac
+done
 
-PREM_BOX_REPO=prem-box
-PREM_BOX_USER=${1:-$DEFAULT_PREM_BOX_USER}
-PREM_BOX_BRANCH=${2:-$DEFAULT_PREM_BOX_BRANCH}
-PREM_REGISTRY_BRANCH=${3:-$DEFAULT_PREM_REGISTRY_BRANCH}
-PREM_REGISTRY_URL=https://raw.githubusercontent.com/premAI-io/prem-registry/$PREM_REGISTRY_BRANCH/manifests.json
+PREM_REGISTRY_URL=https://raw.githubusercontent.com/$PREM_REGISTRY_SLUG/manifests.json
 
+# functions
+restartDocker() {
+  sudo systemctl daemon-reload
+  sudo systemctl restart docker
+}
+has_gpu() {
+  lspci | grep -i 'NVIDIA' > /dev/null 2>&1
+}
 
 # update all to latest release images
 echo "⬇️ Pulling latest versions..."
-curl --silent https://raw.githubusercontent.com/$PREM_BOX_USER/$PREM_BOX_REPO/$PREM_BOX_BRANCH/versions.json -o $ORIGINAL_HOME/prem/versions.json
+curl -fsSL https://raw.githubusercontent.com/$PREM_BOX_SLUG/versions.json -o $ORIGINAL_HOME/prem/versions.json
 versions_json=$(cat "$ORIGINAL_HOME"/prem/versions.json)
 
 # Extract the 'app' details
@@ -87,7 +97,7 @@ echo "🔧 Configure Prem..."
 
 # Check if the network exists
 if ! docker network inspect prem-gateway >/dev/null 2>&1; then
-    docker network create prem-gateway
+  docker network create prem-gateway
 fi
 
 export PREM_APP_IMAGE=${app_image}:${app_version}@${app_digest}
@@ -95,40 +105,34 @@ export PREM_DAEMON_IMAGE=${daemon_image}:${daemon_version}@${daemon_digest}
 export PREMG_DNSD_IMAGE=${dnsd_image}:${dnsd_version}@${dnsd_digest}
 export PREMG_CONTROLLERD_IMAGE=${controllerd_image}:${controllerd_version}@${controllerd_digest}
 export PREMG_AUTHD_IMAGE=${authd_image}:${authd_version}@${authd_digest}
-export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
+export PREM_REGISTRY_URL
 
 echo ""
 echo "🏁 Starting Prem..."
-# Check for GPU and install drivers if necessary
+DCC="docker-compose -f $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml -f $ORIGINAL_HOME/prem/docker-compose.premg.yml"
 if has_gpu; then
-    if ! check_nvidia_driver; then
-        echo "NVIDIA GPU detected, but drivers not installed. Installing drivers..."
-        echo "This will reboot your system. Please run this script again after reboot."
-        install_nvidia_drivers
-        exit 0
-    fi
-    echo "nvidia-smi is available. Running with gpu support..."
-    docker-compose -f $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml -f $ORIGINAL_HOME/prem/docker-compose.gpu.yml -f $ORIGINAL_HOME/prem/docker-compose.premg.yml up -d || exit 1
+  echo "nvidia-smi is available. Running with gpu support..."
+  $DCC -f $ORIGINAL_HOME/prem/docker-compose.gpu.yml up -d || exit 1
 else
-    echo "No NVIDIA GPU detected. Running without gpu support..."
-    docker-compose -f $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml -f $ORIGINAL_HOME/prem/docker-compose.premg.yml up -d || exit 1
+  echo "No NVIDIA GPU detected. Running without gpu support..."
+  $DCC up -d || exit 1
 fi
 
 # Loop to check for 'OK' from curl command with maximum 10 retries
 retries=0
-while [ $retries -lt 10 ]; do
-    response=$(set +e; curl -s --fail http://localhost:8080/ping; set -e)
-    if [ "$response" == "OK" ]; then
-        echo "Received OK. Proceeding to next step."
-        break
-    else
-        echo "Waiting for OK response..."
-        sleep 2
-        retries=$((retries + 1))
-    fi
+while test $retries -lt 10; do
+  response=$(set +e; curl -fs http://localhost:8080/ping; set -e)
+  if test "$response" = OK ; then
+    echo "Received OK. Proceeding to next step."
+    break
+  else
+    echo "Waiting for OK response..."
+    sleep 2
+    retries=$((retries + 1))
+  fi
 done
 
-[ "$response" == "OK" ] || { echo "Failed to receive OK response."; exit 1; }
+test "$response" = OK || { echo "Failed to receive OK response."; exit 1; }
 
 echo -e "🥳 Your Prem instance is updated to the latest version."
 echo ""
