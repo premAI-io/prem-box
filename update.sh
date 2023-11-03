@@ -10,7 +10,6 @@ echo -e "This script will update Prem to latest versions"
 echo ""
 
 
-
 ORIGINAL_HOME=$(eval echo ~$SUDO_USER)
 # Check if the Prem configuration directory exists
 if [ ! -f "$ORIGINAL_HOME/prem/config" ]; then
@@ -97,17 +96,14 @@ export PREMG_CONTROLLERD_IMAGE=${controllerd_image}:${controllerd_version}@${con
 export PREMG_AUTHD_IMAGE=${authd_image}:${authd_version}@${authd_digest}
 export PREM_REGISTRY_URL=${PREM_REGISTRY_URL}
 
+has_gpu() {
+  lspci | grep -i 'NVIDIA' > /dev/null 2>&1
+}
+
 echo ""
 echo "🏁 Starting Prem..."
-# Check for GPU and install drivers if necessary
+# Check for GPU
 if has_gpu; then
-    if ! check_nvidia_driver; then
-        echo "NVIDIA GPU detected, but drivers not installed. Installing drivers..."
-        echo "This will reboot your system. Please run this script again after reboot."
-        install_nvidia_drivers
-        exit 0
-    fi
-    echo "nvidia-smi is available. Running with gpu support..."
     docker-compose -f $ORIGINAL_HOME/prem/docker-compose.premapp.premd.yml -f $ORIGINAL_HOME/prem/docker-compose.gpu.yml -f $ORIGINAL_HOME/prem/docker-compose.premg.yml up -d || exit 1
 else
     echo "No NVIDIA GPU detected. Running without gpu support..."
